@@ -4,12 +4,13 @@ use dotenv::dotenv;
 use std::env;
 use std::error::Error;
 use tokio::net::TcpStream;
-use tokio_rustls::client::TlsStream; // Use tokio_rustls instead of tokio_native_tls
+use tokio_rustls::client::TlsStream;
 
 pub struct MailClient {
-    client: SmtpClient<TlsStream<TcpStream>>, // Ensure correct TLS implementation
+    client: SmtpClient<TlsStream<TcpStream>>,
 }
 
+// We need a crpytography client to store the Smtp connection
 use rustls::crypto::{CryptoProvider, ring};
 fn init_crypto() {
     static INIT: std::sync::Once = std::sync::Once::new();
@@ -17,6 +18,11 @@ fn init_crypto() {
         CryptoProvider::install_default(ring::default_provider())
             .expect("Failed to install Rustls CryptoProvider");
     });
+}
+
+// Reads the mail content into memory from a .html file
+fn read_html_content() -> Result<String, Box<dyn Error>> {
+    Ok(std::fs::read_to_string("message.html")?)
 }
 
 impl MailClient {
@@ -43,6 +49,28 @@ impl MailClient {
             .html_body(html);
 
         self.client.send(message).await?;
+        Ok(())
+    }
+
+    // Formats e-mail and sends it
+    pub async fn send_formatted_mail(&mut self, receiver_mails: Vec<&str>, ticket_amount: u8, password: u16) -> Result<(), Box<dyn Error>> {
+        let mut html_content = read_html_content().unwrap();
+
+        // Tohle nám přineslo národní obrození prosím pěkně
+        let ticket_amount_formatted = match ticket_amount {
+            1           => format!("{ticket_amount} lístek"),
+            2 | 3 | 4   => format!("{ticket_amount} lístky"),
+            _           => format!("{ticket_amount} lístků")
+        };
+
+        html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
+        html_content = html_content.replace("{password}", &password.to_string());
+
+        self.send_mail(
+            receiver_mails,
+            "Potvrzení lístků na maturitní ples".to_string(),
+            html_content
+        ).await?;
         Ok(())
     }
 }
