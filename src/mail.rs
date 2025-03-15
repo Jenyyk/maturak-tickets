@@ -13,6 +13,7 @@ pub struct MailClient {
 // We need a crpytography client to store the Smtp connection
 use rustls::crypto::{CryptoProvider, ring};
 fn init_crypto() {
+    println!("Initiating cryptography client");
     static INIT: std::sync::Once = std::sync::Once::new();
     INIT.call_once(|| {
         CryptoProvider::install_default(ring::default_provider())
@@ -32,11 +33,13 @@ impl MailClient {
         dotenv().ok();
         let password = env::var("MAIL_PASSWORD").expect("MISSING MAIL PASSWORD");
 
+        print!("Connecting to SMTP server... ");
         let client = SmtpClientBuilder::new("smtp.seznam.cz", 465)
             .implicit_tls(true)
             .credentials(("listky@maturak26ab.cz", password.as_str()))
             .connect()
             .await?;
+        println!("Connected!");
 
         Ok(Self { client })
     }
@@ -66,11 +69,13 @@ impl MailClient {
         html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
         html_content = html_content.replace("{password}", &password.to_string());
 
+        print!("Sending formatted e-mail to {:?}... ", receiver_mails);
         self.send_mail(
             receiver_mails,
             "Potvrzení lístků na maturitní ples".to_string(),
             html_content
         ).await?;
+        println!("Sent!");
         Ok(())
     }
 }
