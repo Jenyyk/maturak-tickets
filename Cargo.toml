@@ -1,0 +1,11 @@
+[package]
+name = "ticket-bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+lettre = "0.11.15"
+mail-send = { version = "0.5", features = ["builder"] }
+openssl = { version = "0.10", features = ["vendored"] }
+tokio = { version = "1", features = ["full"] }
