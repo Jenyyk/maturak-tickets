@@ -1,18 +1,10 @@
-use std::hash::{DefaultHasher, Hasher, Hash};
-pub fn generate_hash(t: &str) -> u64 {
-    let mut s = DefaultHasher::new();
-    t.hash(&mut s);
-    s.finish()
-}
-
 use qrcode::{QrCode, types::EcLevel};
 use image::{Luma, ImageBuffer};
 use image::codecs::png::PngEncoder;
 use std::io::Cursor;
 
-pub fn generate_qr_code(receiver_mail: &str) -> Vec<u8> {
+pub fn generate_qr_code(qr_content: &str) -> Vec<u8> {
     print!("Generating hash: ");
-    let qr_content = generate_hash(receiver_mail).to_string();
     println!("{}", qr_content);
 
     print!("Generating QR code... ");
@@ -29,7 +21,7 @@ pub fn generate_qr_code(receiver_mail: &str) -> Vec<u8> {
     style_qr_code(buf)
 }
 
-use image::{DynamicImage, GenericImage, io::Reader as ImageReader, RgbaImage};
+use image::{DynamicImage, GenericImage, ImageReader, RgbaImage};
 
 fn style_qr_code(qr_code_buf: Vec<u8>) -> Vec<u8> {
     let qr_image = ImageReader::new(Cursor::new(qr_code_buf))

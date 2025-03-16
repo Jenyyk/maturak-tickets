@@ -45,20 +45,22 @@ impl MailClient {
         Ok(Self { client })
     }
 
-    pub async fn send_mail(&mut self, receiver_mails: Vec<&str>, subject: String, html: String, qr_code: &[u8]) -> Result<(), Box<dyn Error>> {
-        let message = MessageBuilder::new()
+    pub async fn send_mail(&mut self, receiver_mails: Vec<&str>, subject: String, html: String, qr_codes: Vec<&[u8]>) -> Result<(), Box<dyn Error>> {
+        let mut message = MessageBuilder::new()
             .from(("Maturitní Lístky", "listky@maturak26ab.cz"))
             .to(receiver_mails)
             .subject(subject)
-            .html_body(html)
-            .attachment("image/png", "qrcode.png", qr_code);
+            .html_body(html);
+        for code in &qr_codes {
+            message = message.attachment("image/png", "qrcode.png", *code);
+        }
 
         self.client.send(message).await?;
         Ok(())
     }
 
     // Formats e-mail and sends it
-    pub async fn send_formatted_mail(&mut self, receiver_mail: &str, ticket_amount: u8) -> Result<(), Box<dyn Error>> {
+    pub async fn send_formatted_mail(&mut self, receiver_mail: &str, ticket_amount: u8, hash: String) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
         // Tohle nám přineslo národní obrození prosím pěkně
@@ -70,15 +72,27 @@ impl MailClient {
 
         html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
-        let qr_code_image = qrcodes::generate_qr_code(receiver_mail);
-        let qr_code_bytes: &[u8] = qr_code_image.as_ref();
+        // Generate ticket QR codes
+        let mut qr_codes: Vec<Vec<u8>> = Vec::new();
+        for i in 0..ticket_amount {
+            let ticket_hash = format!("{}{}", hash, i);
+            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash);
+            qr_codes.push(qr_code_image);
+
+            // TODO!
+            // database.add_hash(ticket_hash);
+        }
+
+        // Now create references that live long enough
+        let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();
+
 
         print!("Sending formatted e-mail to {}... ", receiver_mail);
         self.send_mail(
             vec![receiver_mail],
             "Potvrzení lístků na maturitní ples".to_string(),
             html_content,
-            qr_code_bytes
+            qr_code_refs
         ).await?;
         println!("Sent!");
         Ok(())
