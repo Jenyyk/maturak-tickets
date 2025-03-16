@@ -5,9 +5,11 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
+image = "0.25.5"
 lettre = "0.11.15"
 mail-send = { version = "0.5", features = ["builder"] }
 openssl = { version = "0.10", features = ["vendored"] }
+qrcode = "0.14.1"
 rustls = "0.23.23"
 tokio = { version = "1", features = ["full"] }
 tokio-rustls = "0.26.2"

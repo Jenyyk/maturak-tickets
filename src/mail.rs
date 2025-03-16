@@ -26,6 +26,7 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
     Ok(std::fs::read_to_string("message.html")?)
 }
 
+use crate::qrcodes;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
         init_crypto();
@@ -44,19 +45,20 @@ impl MailClient {
         Ok(Self { client })
     }
 
-    pub async fn send_mail(&mut self, receiver_mails: Vec<&str>, subject: String, html: String) -> Result<(), Box<dyn Error>> {
+    pub async fn send_mail(&mut self, receiver_mails: Vec<&str>, subject: String, html: String, qr_code: &[u8]) -> Result<(), Box<dyn Error>> {
         let message = MessageBuilder::new()
             .from(("Maturitní Lístky", "listky@maturak26ab.cz"))
             .to(receiver_mails)
             .subject(subject)
-            .html_body(html);
+            .html_body(html)
+            .attachment("image/png", "qrcode.png", qr_code);
 
         self.client.send(message).await?;
         Ok(())
     }
 
     // Formats e-mail and sends it
-    pub async fn send_formatted_mail(&mut self, receiver_mails: Vec<&str>, ticket_amount: u8, password: u16) -> Result<(), Box<dyn Error>> {
+    pub async fn send_formatted_mail(&mut self, receiver_mail: &str, ticket_amount: u8) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
         // Tohle nám přineslo národní obrození prosím pěkně
@@ -67,13 +69,16 @@ impl MailClient {
         };
 
         html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
-        html_content = html_content.replace("{password}", &password.to_string());
 
-        print!("Sending formatted e-mail to {:?}... ", receiver_mails);
+        let qr_code_image = qrcodes::generate_qr_code(receiver_mail);
+        let qr_code_bytes: &[u8] = qr_code_image.as_ref();
+
+        print!("Sending formatted e-mail to {}... ", receiver_mail);
         self.send_mail(
-            receiver_mails,
+            vec![receiver_mail],
             "Potvrzení lístků na maturitní ples".to_string(),
-            html_content
+            html_content,
+            qr_code_bytes
         ).await?;
         println!("Sent!");
         Ok(())
