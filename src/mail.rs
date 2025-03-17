@@ -27,6 +27,7 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
 }
 
 use crate::qrcodes;
+use crate::database::Database;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
         init_crypto();
@@ -72,16 +73,17 @@ impl MailClient {
 
         html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
-        // Generate ticket QR codes
+        println!("Generating QR codes... ");
         let mut qr_codes: Vec<Vec<u8>> = Vec::new();
         for i in 0..ticket_amount {
             let ticket_hash = format!("{}{}", hash, i);
             let qr_code_image = qrcodes::generate_qr_code(&ticket_hash);
             qr_codes.push(qr_code_image);
 
-            // TODO!
-            // database.add_hash(ticket_hash);
+            print!("{} ", i);
+            Database::add_hash(&ticket_hash);
         }
+        println!("done");
 
         // Now create references that live long enough
         let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();

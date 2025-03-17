@@ -1,6 +1,8 @@
 mod mail;
 mod qrcodes;
+mod database;
 
+use crate::database::Database;
 use mail::MailClient;
 use tokio;
 
@@ -11,9 +13,13 @@ async fn main() {
     let mut client = MailClient::new().await.unwrap();
 
     for address in new_mails {
+        println!("Working on client {}", address);
         let address_hash = generate_hash(address);
-        // TODO!
-        // if database.exists(format!("{}0", hash)) { continue; }
+
+        print!("Checking database... ");
+        if Database::contains(&format!("{}0", address_hash)) { println!("found - cancelling"); continue; }
+        println!("not found - continuing");
+
         let _ = client.send_formatted_mail(
             address,
             3_u8,
