@@ -52,8 +52,13 @@ impl MailClient {
             .to(receiver_mails)
             .subject(subject)
             .html_body(html);
-        for code in &qr_codes {
-            message = message.attachment("image/png", "qrcode.png", *code);
+
+        let filenames: Vec<String> = (1..=qr_codes.len())
+        .map(|i| format!("qrcode{}.png", i))
+        .collect(); // Store filenames to keep them in memory
+
+        for (code, filename) in qr_codes.iter().zip(&filenames) {
+            message = message.attachment("image/png", filename, *code);
         }
 
         self.client.send(message).await?;
