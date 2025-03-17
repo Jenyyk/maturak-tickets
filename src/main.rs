@@ -4,7 +4,6 @@ mod qrcodes;
 
 use crate::database::Database;
 use mail::MailClient;
-use tokio;
 
 #[tokio::main]
 async fn main() {

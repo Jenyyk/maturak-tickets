@@ -83,7 +83,7 @@ impl MailClient {
         // Tohle nám přineslo národní obrození prosím pěkně
         let ticket_amount_formatted = match ticket_amount {
             1 => format!("{ticket_amount} lístek"),
-            2 | 3 | 4 => format!("{ticket_amount} lístky"),
+            2..=4 => format!("{ticket_amount} lístky"),
             _ => format!("{ticket_amount} lístků"),
         };
 
