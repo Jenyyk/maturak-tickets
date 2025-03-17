@@ -1,6 +1,6 @@
+mod database;
 mod mail;
 mod qrcodes;
-mod database;
 
 use crate::database::Database;
 use mail::MailClient;
@@ -17,18 +17,19 @@ async fn main() {
         let address_hash = generate_hash(address);
 
         print!("Checking database... ");
-        if Database::contains(&format!("{}0", address_hash)) { println!("found - cancelling"); continue; }
+        if Database::contains(&format!("{}0", address_hash)) {
+            println!("found - cancelling");
+            continue;
+        }
         println!("not found - continuing");
 
-        let _ = client.send_formatted_mail(
-            address,
-            3_u8,
-            address_hash.to_string()
-        ).await;
+        let _ = client
+            .send_formatted_mail(address, 3_u8, address_hash.to_string())
+            .await;
     }
 }
 
-use std::hash::{DefaultHasher, Hasher, Hash};
+use std::hash::{DefaultHasher, Hash, Hasher};
 pub fn generate_hash(t: &str) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);

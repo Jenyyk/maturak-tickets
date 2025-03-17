@@ -25,7 +25,10 @@ impl Database {
     fn load_from_file(file_name: &str) -> Vec<String> {
         match fs::read_to_string(file_name) {
             Ok(content) => content.lines().map(String::from).collect(),
-            Err(e) => { println!("{}", e); Vec::new() },
+            Err(e) => {
+                println!("{}", e);
+                Vec::new()
+            }
         }
     }
 
@@ -41,6 +44,8 @@ impl Database {
 
 // Global singleton instnce
 
-static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| Mutex::new(Database {
-    data: Database::load_from_file("data.txt"),
-}));
+static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
+    Mutex::new(Database {
+        data: Database::load_from_file("data.txt"),
+    })
+});

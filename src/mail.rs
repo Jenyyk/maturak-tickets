@@ -1,6 +1,6 @@
-use mail_send::{SmtpClient, SmtpClientBuilder};
-use mail_send::mail_builder::MessageBuilder;
 use dotenv::dotenv;
+use mail_send::mail_builder::MessageBuilder;
+use mail_send::{SmtpClient, SmtpClientBuilder};
 use std::env;
 use std::error::Error;
 use tokio::net::TcpStream;
@@ -11,7 +11,7 @@ pub struct MailClient {
 }
 
 // We need a crpytography client to store the Smtp connection
-use rustls::crypto::{CryptoProvider, ring};
+use rustls::crypto::{ring, CryptoProvider};
 fn init_crypto() {
     println!("Initiating cryptography client");
     static INIT: std::sync::Once = std::sync::Once::new();
@@ -26,8 +26,8 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
     Ok(std::fs::read_to_string("message.html")?)
 }
 
-use crate::qrcodes;
 use crate::database::Database;
+use crate::qrcodes;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
         init_crypto();
@@ -46,7 +46,13 @@ impl MailClient {
         Ok(Self { client })
     }
 
-    pub async fn send_mail(&mut self, receiver_mails: Vec<&str>, subject: String, html: String, qr_codes: Vec<&[u8]>) -> Result<(), Box<dyn Error>> {
+    pub async fn send_mail(
+        &mut self,
+        receiver_mails: Vec<&str>,
+        subject: String,
+        html: String,
+        qr_codes: Vec<&[u8]>,
+    ) -> Result<(), Box<dyn Error>> {
         let mut message = MessageBuilder::new()
             .from(("Maturitní Lístky", "listky@maturak26ab.cz"))
             .to(receiver_mails)
@@ -54,8 +60,8 @@ impl MailClient {
             .html_body(html);
 
         let filenames: Vec<String> = (1..=qr_codes.len())
-        .map(|i| format!("qrcode{}.png", i))
-        .collect(); // Store filenames to keep them in memory
+            .map(|i| format!("qrcode{}.png", i))
+            .collect(); // Store filenames to keep them in memory
 
         for (code, filename) in qr_codes.iter().zip(&filenames) {
             message = message.attachment("image/png", filename, *code);
@@ -66,17 +72,23 @@ impl MailClient {
     }
 
     // Formats e-mail and sends it
-    pub async fn send_formatted_mail(&mut self, receiver_mail: &str, ticket_amount: u8, hash: String) -> Result<(), Box<dyn Error>> {
+    pub async fn send_formatted_mail(
+        &mut self,
+        receiver_mail: &str,
+        ticket_amount: u8,
+        hash: String,
+    ) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
         // Tohle nám přineslo národní obrození prosím pěkně
         let ticket_amount_formatted = match ticket_amount {
-            1           => format!("{ticket_amount} lístek"),
-            2 | 3 | 4   => format!("{ticket_amount} lístky"),
-            _           => format!("{ticket_amount} lístků")
+            1 => format!("{ticket_amount} lístek"),
+            2 | 3 | 4 => format!("{ticket_amount} lístky"),
+            _ => format!("{ticket_amount} lístků"),
         };
 
-        html_content = html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
+        html_content =
+            html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
         println!("Generating QR codes... ");
         let mut qr_codes: Vec<Vec<u8>> = Vec::new();
@@ -93,14 +105,14 @@ impl MailClient {
         // Now create references that live long enough
         let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();
 
-
         print!("Sending formatted e-mail to {}... ", receiver_mail);
         self.send_mail(
             vec![receiver_mail],
             "Potvrzení lístků na maturitní ples".to_string(),
             html_content,
-            qr_code_refs
-        ).await?;
+            qr_code_refs,
+        )
+        .await?;
         println!("Sent!");
         Ok(())
     }
