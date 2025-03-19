@@ -7,11 +7,12 @@ use mail::MailClient;
 
 #[tokio::main]
 async fn main() {
-    let new_mails = vec!["jan.krivsky@maturak26ab.cz"];
+    let new_mails = vec!["jan.krivsky@maturak26ab.cz", "listky@maturak26ab.cz"];
 
     let mut client = MailClient::new().await.unwrap();
 
     for address in new_mails {
+        println!();
         println!("Working on client {}", address);
         let address_hash = generate_hash(address);
 
@@ -26,6 +27,9 @@ async fn main() {
             .send_formatted_mail(address, 3_u8, address_hash.to_string())
             .await;
     }
+
+    // TODO!
+    // Database::backup();
 }
 
 use std::hash::{DefaultHasher, Hash, Hasher};

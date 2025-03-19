@@ -13,7 +13,7 @@ pub struct MailClient {
 // We need a crpytography client to store the Smtp connection
 use rustls::crypto::{ring, CryptoProvider};
 fn init_crypto() {
-    println!("Initiating cryptography client");
+    println!("Initiating cryptography client for SMTP connection");
     static INIT: std::sync::Once = std::sync::Once::new();
     INIT.call_once(|| {
         CryptoProvider::install_default(ring::default_provider())
@@ -26,7 +26,7 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
     Ok(std::fs::read_to_string("message.html")?)
 }
 
-use crate::database::Database;
+use crate::database::{Database, HashStruct};
 use crate::qrcodes;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
@@ -91,6 +91,7 @@ impl MailClient {
             html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
         println!("Generating QR codes... ");
+        let mut hashes: Vec<String> = Vec::new();
         let mut qr_codes: Vec<Vec<u8>> = Vec::new();
         for i in 0..ticket_amount {
             let ticket_hash = format!("{}{}", hash, i);
@@ -98,9 +99,14 @@ impl MailClient {
             qr_codes.push(qr_code_image);
 
             print!("{} ", i);
-            Database::add_hash(&ticket_hash);
+            hashes.push(ticket_hash);
         }
         println!("done");
+        println!("Adding to database");
+        Database::add_hash_struct(HashStruct {
+            address: receiver_mail.to_string(),
+            hashes: hashes,
+        });
 
         // Now create references that live long enough
         let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();
