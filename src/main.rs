@@ -9,7 +9,12 @@ use mail::MailClient;
 async fn main() {
     let new_mails = vec!["jan.krivsky@maturak26ab.cz", "listky@maturak26ab.cz"];
 
-    let mut client = MailClient::new().await.unwrap();
+    let mut client = loop {
+        match MailClient::new().await {
+            Ok(client) => break client,
+            Err(_) => print!("retrying. "),
+        }
+    };
 
     for address in new_mails {
         println!();

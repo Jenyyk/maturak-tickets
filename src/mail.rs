@@ -102,24 +102,31 @@ impl MailClient {
             hashes.push(ticket_hash);
         }
         println!("done");
-        println!("Adding to database");
-        Database::add_hash_struct(HashStruct {
-            address: receiver_mail.to_string(),
-            hashes: hashes,
-        });
 
         // Now create references that live long enough
         let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();
 
         print!("Sending formatted e-mail to {}... ", receiver_mail);
-        self.send_mail(
-            vec![receiver_mail],
-            "Potvrzení lístků na maturitní ples".to_string(),
-            html_content,
-            qr_code_refs,
-        )
-        .await?;
-        println!("Sent!");
+        match self
+            .send_mail(
+                vec![receiver_mail],
+                "Potvrzení lístků na maturitní ples".to_string(),
+                html_content,
+                qr_code_refs,
+            )
+            .await
+        {
+            Ok(()) => {
+                println!("Sent!");
+                print!("Adding to database... ");
+                Database::add_hash_struct(HashStruct {
+                    address: receiver_mail.to_string(),
+                    hashes: hashes,
+                });
+                println!("done");
+            }
+            Err(e) => println!("failed with Error {}, aborting", e),
+        };
         Ok(())
     }
 }
