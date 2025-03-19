@@ -76,7 +76,7 @@ impl MailClient {
         &mut self,
         receiver_mail: &str,
         ticket_amount: u8,
-        hash: String,
+        transaction_hash: String,
     ) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
@@ -94,11 +94,11 @@ impl MailClient {
         let mut hashes: Vec<String> = Vec::new();
         let mut qr_codes: Vec<Vec<u8>> = Vec::new();
         for i in 0..ticket_amount {
-            let ticket_hash = format!("{}{}", hash, i);
+            let ticket_hash = format!("{}{}", transaction_hash, i);
             let qr_code_image = qrcodes::generate_qr_code(&ticket_hash);
             qr_codes.push(qr_code_image);
 
-            print!("{} ", i);
+            println!("{} ", i);
             hashes.push(ticket_hash);
         }
         println!("done");
@@ -122,6 +122,7 @@ impl MailClient {
                 Database::add_hash_struct(HashStruct {
                     address: receiver_mail.to_string(),
                     hashes: hashes,
+                    transaction_hash: transaction_hash,
                 });
                 println!("done");
             }

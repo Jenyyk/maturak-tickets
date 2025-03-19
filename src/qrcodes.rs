@@ -18,7 +18,7 @@ pub fn generate_qr_code(qr_content: &str) -> Vec<u8> {
         .write_with_encoder(encoder)
         .expect("Failed to write image to buffer");
 
-    println!("done");
+    print!("done with ");
 
     style_qr_code(buf)
 }

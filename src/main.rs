@@ -1,4 +1,5 @@
 mod database;
+mod kbapi;
 mod mail;
 mod qrcodes;
 
@@ -7,7 +8,7 @@ use mail::MailClient;
 
 #[tokio::main]
 async fn main() {
-    let new_mails = vec!["jan.krivsky@maturak26ab.cz", "listky@maturak26ab.cz"];
+    let transactions = kbapi::get_transactions();
 
     let mut client = loop {
         match MailClient::new().await {
@@ -16,20 +17,29 @@ async fn main() {
         }
     };
 
-    for address in new_mails {
+    for transaction in transactions {
         println!();
-        println!("Working on client {}", address);
-        let address_hash = generate_hash(address);
+        println!(
+            "Working on client {} with vs {}",
+            transaction.address, transaction.vs
+        );
+        let transaction_hash = generate_hash(&format!(
+            "{}{}{}{}",
+            transaction.amount, transaction.address, transaction.date, transaction.vs
+        ));
+
+        // round up a little (better to lose out on 50 crowns than scam people because of bank fees)
+        let amount = (transaction.amount + 100) / 400;
 
         print!("Checking database... ");
-        if Database::contains(&format!("{}0", address_hash)) {
+        if Database::contains(&transaction_hash.to_string()) {
             println!("found - cancelling");
             continue;
         }
         println!("not found - continuing");
 
         let _ = client
-            .send_formatted_mail(address, 3_u8, address_hash.to_string())
+            .send_formatted_mail(&transaction.address, amount as u8, transaction_hash.to_string())
             .await;
     }
 

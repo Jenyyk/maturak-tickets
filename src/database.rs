@@ -11,6 +11,7 @@ use std::{
 pub struct HashStruct {
     pub address: String,
     pub hashes: Vec<String>,
+    pub transaction_hash: String,
 }
 
 pub struct Database {
@@ -27,7 +28,7 @@ impl Database {
     pub fn contains(hash: &str) -> bool {
         let db = DATABASE.lock().unwrap();
         for datastruct in &db.data {
-            if datastruct.hashes.contains(&hash.to_string()) {
+            if datastruct.transaction_hash == hash {
                 return true;
             }
         }
