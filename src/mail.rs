@@ -121,8 +121,8 @@ impl MailClient {
                 print!("Adding to database... ");
                 Database::add_hash_struct(HashStruct {
                     address: receiver_mail.to_string(),
-                    hashes: hashes,
-                    transaction_hash: transaction_hash,
+                    hashes,
+                    transaction_hash,
                 });
                 println!("done");
             }

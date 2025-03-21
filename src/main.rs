@@ -39,7 +39,11 @@ async fn main() {
         println!("not found - continuing");
 
         let _ = client
-            .send_formatted_mail(&transaction.address, amount as u8, transaction_hash.to_string())
+            .send_formatted_mail(
+                &transaction.address,
+                amount as u8,
+                transaction_hash.to_string(),
+            )
             .await;
     }
 

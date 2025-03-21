@@ -54,11 +54,9 @@ impl Database {
         let reader = io::BufReader::new(file.unwrap());
         let mut data_list = Vec::new();
 
-        for line in reader.lines() {
-            if let Ok(json) = line {
-                if let Ok(entry) = serde_json::from_str::<HashStruct>(&json) {
-                    data_list.push(entry);
-                }
+        for line in reader.lines().map_while(Result::ok) {
+            if let Ok(entry) = serde_json::from_str::<HashStruct>(&line) {
+                data_list.push(entry);
             }
         }
 

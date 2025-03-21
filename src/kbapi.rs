@@ -25,7 +25,7 @@ pub fn get_transactions() -> Vec<Transaction> {
             amount: 750,
             address: "jan.krivsky@maturak26ab.cz".to_string(),
             date: "19.3.".to_string(),
-            vs: "".to_string(),
+            vs: "186".to_string(),
         },
     ]
 }
