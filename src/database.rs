@@ -1,8 +1,9 @@
+use chrono::Local;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fs::{File, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::{self, BufRead, Write},
     sync::Mutex,
 };
@@ -73,6 +74,16 @@ impl Database {
         let json = serde_json::to_string(data)?;
         writeln!(file, "{}", json)?; // Append each struct as a new JSON line
         Ok(())
+    }
+
+    pub fn backup() {
+        print!("Creating backup... ");
+        let timestamp = Local::now().format("%d-%m-%Y_%H_%M");
+        let backup_name = format!("backups/backup_{}.txt", timestamp);
+
+        fs::create_dir_all("backups").unwrap();
+        fs::copy("data.txt", &backup_name).unwrap();
+        println!("done");
     }
 }
 

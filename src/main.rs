@@ -43,8 +43,7 @@ async fn main() {
             .await;
     }
 
-    // TODO!
-    // Database::backup();
+    Database::backup();
 }
 
 use std::hash::{DefaultHasher, Hash, Hasher};
