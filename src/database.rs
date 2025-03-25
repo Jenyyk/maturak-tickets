@@ -13,6 +13,9 @@ pub struct HashStruct {
     pub address: String,
     pub hashes: Vec<String>,
     pub transaction_hash: String,
+
+    pub manual: bool,
+    pub deleted: bool,
 }
 
 pub struct Database {
@@ -97,6 +100,7 @@ impl Database {
 
         for line in reader.lines().map_while(Result::ok) {
             if let Ok(entry) = serde_json::from_str::<HashStruct>(&line) {
+                if entry.manual { continue; }
                 data_list.push(entry);
             }
         }

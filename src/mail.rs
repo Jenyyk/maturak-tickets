@@ -123,6 +123,8 @@ impl MailClient {
                     address: receiver_mail.to_string(),
                     hashes,
                     transaction_hash,
+                    manual: false,
+                    deleted: false,
                 });
                 println!("done");
             }
