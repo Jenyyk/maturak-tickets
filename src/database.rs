@@ -19,6 +19,9 @@ pub struct Database {
     pub data: Vec<HashStruct>,
 }
 
+use crate::kbapi;
+use crate::kbapi::FetchError;
+
 impl Database {
     pub fn add_hash_struct(data: HashStruct) {
         let mut db = DATABASE.lock().unwrap();
@@ -34,6 +37,44 @@ impl Database {
             }
         }
         false
+    }
+
+    pub fn trim_old(new_data: Vec<kbapi::Transaction>) -> Result<Vec<kbapi::Transaction>, FetchError> {
+        let data: &Vec<HashStruct> = &DATABASE.lock().unwrap().data;
+        // base cases
+        if data.is_empty() { return Ok(new_data); }
+        if new_data.is_empty() { return Ok(Vec::new()); }
+        if data.len() == 1 {
+            if data[0].address == new_data[0].address {
+                return Ok(new_data);
+            }
+            return Err(FetchError::MissingData);
+        }
+
+        for i in (0..new_data.len()).rev() {
+            let mut continuous: bool = true;
+
+            for j in 0..=i {
+                if data[data.len() - 1 - j].address != new_data[i - j].address {
+                    continuous = false;
+                    break;
+                }
+            }
+
+            // only one element overlaps (cant be sure)
+            if continuous && i < 1 {
+                return Err(FetchError::MissingData);
+            }
+            // return only new elements
+            if continuous {
+                return Ok(new_data[(i+1)..].to_vec());
+            }
+        }
+        Err(FetchError::MissingData)
+    }
+
+    pub fn len() -> usize {
+        DATABASE.lock().unwrap().data.len()
     }
 
     fn load_from_file(file_name: &str) -> Vec<HashStruct> {

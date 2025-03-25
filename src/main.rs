@@ -2,13 +2,20 @@ mod database;
 mod kbapi;
 mod mail;
 mod qrcodes;
+mod alert_hook;
 
 use crate::database::Database;
 use mail::MailClient;
 
 #[tokio::main]
 async fn main() {
+    // alert_hook::panic("všechno se dosralo").await;
     let transactions = kbapi::get_transactions();
+    if transactions.is_empty() {
+        println!();
+        println!("No new transactions found, goodbye! :3");
+        return
+    }
 
     let mut client = loop {
         match MailClient::new().await {
@@ -20,12 +27,13 @@ async fn main() {
     for transaction in transactions {
         println!();
         println!(
-            "Working on client {} with vs {}",
-            transaction.address, transaction.vs
+            "Working on client {}",
+            transaction.address
         );
+        println!("{}", Database::len());
         let transaction_hash = generate_hash(&format!(
             "{}{}{}{}",
-            transaction.amount, transaction.address, transaction.date, transaction.vs
+            transaction.amount, transaction.address, transaction.date, Database::len()
         ));
 
         // round up a little (better to lose out on 50 crowns than scam people because of bank fees)
