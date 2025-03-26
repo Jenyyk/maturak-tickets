@@ -22,7 +22,7 @@ impl fmt::Display for FetchError {
     }
 }
 
-use crate::alert_hook::panic_block;
+use crate::hook;
 use crate::database::Database;
 
 pub fn get_transactions() -> Vec<Transaction> {
@@ -30,7 +30,7 @@ pub fn get_transactions() -> Vec<Transaction> {
     let transactions = loop {
         // jestli je tohle pravda, tak se něco ukrutně dosralo
         if size > 100 {
-            panic_block("Překročen limit pro fetchování");
+            hook::panic_block("Překročen limit pro fetchování");
             return Vec::new();
         }
         match Database::trim_old(fetch_data(size)) {
@@ -42,6 +42,9 @@ pub fn get_transactions() -> Vec<Transaction> {
             Err(e) => println!("{:?}", e),
         };
     };
+    if size > 20 {
+        hook::warn_block(&format!("Nezvykle velké množství transakcí: {}", size));
+    }
     transactions
 }
 

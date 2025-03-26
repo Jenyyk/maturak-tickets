@@ -1,4 +1,4 @@
-mod alert_hook;
+mod hook;
 mod database;
 mod kbapi;
 mod mail;
@@ -9,7 +9,6 @@ use mail::MailClient;
 
 #[tokio::main]
 async fn main() {
-    // alert_hook::panic("všechno se dosralo").await;
     let transactions = kbapi::get_transactions();
     if transactions.is_empty() {
         println!();
