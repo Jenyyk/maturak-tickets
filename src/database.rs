@@ -42,11 +42,17 @@ impl Database {
         false
     }
 
-    pub fn trim_old(new_data: Vec<kbapi::Transaction>) -> Result<Vec<kbapi::Transaction>, FetchError> {
+    pub fn trim_old(
+        new_data: Vec<kbapi::Transaction>,
+    ) -> Result<Vec<kbapi::Transaction>, FetchError> {
         let data: &Vec<HashStruct> = &DATABASE.lock().unwrap().data;
         // base cases
-        if data.is_empty() { return Ok(new_data); }
-        if new_data.is_empty() { return Ok(Vec::new()); }
+        if data.is_empty() {
+            return Ok(new_data);
+        }
+        if new_data.is_empty() {
+            return Ok(Vec::new());
+        }
         if data.len() == 1 {
             if data[0].address == new_data[0].address {
                 return Ok(new_data);
@@ -70,7 +76,7 @@ impl Database {
             }
             // return only new elements
             if continuous {
-                return Ok(new_data[(i+1)..].to_vec());
+                return Ok(new_data[(i + 1)..].to_vec());
             }
         }
         Err(FetchError::MissingData)
@@ -100,7 +106,9 @@ impl Database {
 
         for line in reader.lines().map_while(Result::ok) {
             if let Ok(entry) = serde_json::from_str::<HashStruct>(&line) {
-                if entry.manual { continue; }
+                if entry.manual {
+                    continue;
+                }
                 data_list.push(entry);
             }
         }

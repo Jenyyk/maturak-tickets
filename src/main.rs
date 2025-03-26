@@ -1,8 +1,8 @@
+mod alert_hook;
 mod database;
 mod kbapi;
 mod mail;
 mod qrcodes;
-mod alert_hook;
 
 use crate::database::Database;
 use mail::MailClient;
@@ -14,7 +14,7 @@ async fn main() {
     if transactions.is_empty() {
         println!();
         println!("No new transactions found, goodbye! :3");
-        return
+        return;
     }
 
     let mut client = loop {
@@ -26,14 +26,14 @@ async fn main() {
 
     for transaction in transactions {
         println!();
-        println!(
-            "Working on client {}",
-            transaction.address
-        );
+        println!("Working on client {}", transaction.address);
         println!("{}", Database::len());
         let transaction_hash = generate_hash(&format!(
             "{}{}{}{}",
-            transaction.amount, transaction.address, transaction.date, Database::len()
+            transaction.amount,
+            transaction.address,
+            transaction.date,
+            Database::len()
         ));
 
         // round up a little (better to lose out on 50 crowns than scam people because of bank fees)

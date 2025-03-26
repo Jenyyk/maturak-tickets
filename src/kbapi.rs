@@ -22,8 +22,8 @@ impl fmt::Display for FetchError {
     }
 }
 
-use crate::database::Database;
 use crate::alert_hook::panic_block;
+use crate::database::Database;
 
 pub fn get_transactions() -> Vec<Transaction> {
     let mut size: u16 = 20;
@@ -38,13 +38,12 @@ pub fn get_transactions() -> Vec<Transaction> {
             Err(FetchError::MissingData) => {
                 print!("Not enough data - fetching more... ");
                 size += 10;
-            },
+            }
             Err(e) => println!("{:?}", e),
         };
     };
     transactions
 }
-
 
 fn fetch_data(size: u16) -> Vec<Transaction> {
     vec![
@@ -65,7 +64,7 @@ fn fetch_data(size: u16) -> Vec<Transaction> {
         },
         Transaction {
             amount: 750,
-            address:"roub@maturak26ab.cz".to_string(),
+            address: "roub@maturak26ab.cz".to_string(),
             date: "19.3.".to_string(),
         },
     ]
