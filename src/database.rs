@@ -83,7 +83,12 @@ impl Database {
     }
 
     pub fn len() -> usize {
-        DATABASE.lock().unwrap().data.len()
+        let mut len = 0;
+        let file = fs::read_to_string("data.txt").unwrap();
+        for _line in file.lines() {
+            len += 1;
+        }
+        len
     }
 
     fn load_from_file(file_name: &str) -> Vec<HashStruct> {
