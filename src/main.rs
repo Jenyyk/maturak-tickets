@@ -53,7 +53,11 @@ async fn main() {
             )
             .await;
     }
-    hook::log(&format!("Processed {} new transaction/s", transactions.len())).await;
+    hook::log(&format!(
+        "Processed {} new transaction/s",
+        transactions.len()
+    ))
+    .await;
 
     Database::backup();
 }

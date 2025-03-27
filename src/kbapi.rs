@@ -11,13 +11,11 @@ use std::fmt;
 #[derive(Debug)]
 pub enum FetchError {
     MissingData,
-    Unknown,
 }
 impl fmt::Display for FetchError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             FetchError::MissingData => write!(f, "Requested too little transactions"),
-            FetchError::Unknown => write!(f, "Unknown error :3"),
         }
     }
 }
@@ -39,7 +37,6 @@ pub fn get_transactions() -> Vec<Transaction> {
                 print!("Not enough data - fetching more... ");
                 size += 10;
             }
-            Err(e) => println!("{:?}", e),
         };
     };
     if size > 20 {
@@ -48,7 +45,7 @@ pub fn get_transactions() -> Vec<Transaction> {
     transactions
 }
 
-fn fetch_data(size: u16) -> Vec<Transaction> {
+fn fetch_data(_size: u16) -> Vec<Transaction> {
     vec![
         Transaction {
             amount: 400,
