@@ -33,28 +33,22 @@ async fn send_webhook(message: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn log(text: &str) {
-    let _ = send_webhook(&format!(
-        "-# Log: {}",
-        text
-    ))
-    .await;
+    let _ = send_webhook(&format!("-# Log: {}", text)).await;
 }
 pub async fn warn(text: &str) {
-    let _ = send_webhook(&format!(
-        ":warning: Varování: {}",
-        text
-    ))
-    .await;
+    let _ = send_webhook(&format!(":warning: Varování: {}", text)).await;
 }
 pub async fn panic(text: &str) {
-    let _ = send_webhook(&format!(
-        "## :red_square: POPLACH: {}",
-        text
-    ))
-    .await;
+    let _ = send_webhook(&format!("## :red_square: POPLACH: {}", text)).await;
 }
 
 use futures::executor::block_on;
-pub fn log_block(text: &str) { block_on(log(text)); }
-pub fn warn_block(text: &str) { block_on(warn(text)); }
-pub fn panic_block(text: &str) { block_on(panic(text)); }
+pub fn log_block(text: &str) {
+    block_on(log(text));
+}
+pub fn warn_block(text: &str) {
+    block_on(warn(text));
+}
+pub fn panic_block(text: &str) {
+    block_on(panic(text));
+}

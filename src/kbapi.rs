@@ -22,8 +22,8 @@ impl fmt::Display for FetchError {
     }
 }
 
-use crate::hook;
 use crate::database::Database;
+use crate::hook;
 
 pub fn get_transactions() -> Vec<Transaction> {
     let mut size: u16 = 20;
@@ -65,10 +65,10 @@ fn fetch_data(size: u16) -> Vec<Transaction> {
             address: "jan.krivsky@maturak26ab.cz".to_string(),
             date: "19.3.".to_string(),
         },
-        Transaction {
-            amount: 750,
-            address: "roub@maturak26ab.cz".to_string(),
-            date: "19.3.".to_string(),
-        },
+        // Transaction {
+        //     amount: 750,
+        //     address: "roub@maturak26ab.cz".to_string(),
+        //     date: "19.3.".to_string(),
+        // },
     ]
 }

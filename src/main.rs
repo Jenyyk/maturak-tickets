@@ -1,5 +1,5 @@
-mod hook;
 mod database;
+mod hook;
 mod kbapi;
 mod mail;
 mod qrcodes;
@@ -12,7 +12,7 @@ async fn main() {
     let transactions = kbapi::get_transactions();
     if transactions.is_empty() {
         println!();
-        println!("No new transactions found, goodbye! :3");
+        println!("No new transactions found, goodbye!");
         return;
     }
 
@@ -23,7 +23,7 @@ async fn main() {
         }
     };
 
-    for transaction in transactions {
+    for transaction in &transactions {
         println!();
         println!("Working on client {}", transaction.address);
         println!("{}", Database::len());
@@ -53,6 +53,7 @@ async fn main() {
             )
             .await;
     }
+    hook::log(&format!("Processed {} new transaction/s", transactions.len())).await;
 
     Database::backup();
 }
