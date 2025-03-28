@@ -12,9 +12,13 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-async fn send_webhook(message: &str) -> Result<(), Box<dyn Error>> {
+async fn send_webhook(message: &str, url_index: u8) -> Result<(), Box<dyn Error>> {
     dotenv().ok();
-    let url = env::var("ALERT_HOOK").expect("Missing ALERT_HOOK env variable");
+    let url = if url_index == 0 {
+        env::var("LOG_HOOK").expect("Missing LOG_HOOK env variable")
+    } else {
+        env::var("ALERT_HOOK").expect("Missing ALERT_HOOK env variable")
+    };
 
     // Create webhook payload
     let payload = json!({ "content": message });
@@ -38,7 +42,7 @@ async fn send_webhook(message: &str) -> Result<(), Box<dyn Error>> {
 
 pub async fn send_file_webhook(file_path: &str) -> Result<(), Box<dyn Error>> {
     dotenv().ok();
-    let url = env::var("ALERT_HOOK").expect("Missing ALERT_HOOK env variable");
+    let url = env::var("BACKUP_HOOK").expect("Missing BACKUP_HOOK env variable");
 
     // Open the file as a stream
     let mut file = File::open(file_path)?;
@@ -81,13 +85,13 @@ pub async fn send_file_webhook(file_path: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn log(text: &str) {
-    let _ = send_webhook(&format!("-# Log: {}", text)).await;
+    let _ = send_webhook(&format!("-# Log: {}", text), 0_u8).await;
 }
 pub async fn warn(text: &str) {
-    let _ = send_webhook(&format!(":warning: Varování: {}", text)).await;
+    let _ = send_webhook(&format!(":warning: Varování: {}", text), 1_u8).await;
 }
 pub async fn panic(text: &str) {
-    let _ = send_webhook(&format!("## :red_square: POPLACH: {}", text)).await;
+    let _ = send_webhook(&format!("## :red_square: POPLACH: {}", text), 2_u8).await;
 }
 
 use futures::executor::block_on;
