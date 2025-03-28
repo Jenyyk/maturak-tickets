@@ -27,6 +27,7 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
 }
 
 use crate::database::{Database, HashStruct};
+use crate::hook;
 use crate::qrcodes;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
@@ -77,6 +78,7 @@ impl MailClient {
         receiver_mail: &str,
         ticket_amount: u8,
         transaction_hash: String,
+        transaction_id: String,
     ) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
@@ -123,12 +125,16 @@ impl MailClient {
                     address: receiver_mail.to_string(),
                     hashes,
                     transaction_hash,
+                    transaction_id,
                     manual: false,
                     deleted: false,
                 });
                 println!("done");
             }
-            Err(e) => println!("failed with Error {}, aborting", e),
+            Err(e) => {
+                hook::panic(&format!("e-mail for {} did not send", receiver_mail)).await;
+                println!("failed with Error {}, aborting", e)
+            }
         };
         Ok(())
     }

@@ -1,6 +1,6 @@
+mod bankapi;
 mod database;
 mod hook;
-mod kbapi;
 mod mail;
 mod qrcodes;
 
@@ -9,7 +9,7 @@ use mail::MailClient;
 
 #[tokio::main]
 async fn main() {
-    let transactions = kbapi::get_transactions();
+    let transactions = bankapi::get_transactions();
     if transactions.is_empty() {
         println!();
         println!("No new transactions found, goodbye!");
@@ -23,10 +23,18 @@ async fn main() {
         }
     };
 
+    let mut new_transaction_counter = 0;
     for transaction in &transactions {
         println!();
         println!("Working on client {}", transaction.address);
-        println!("{}", Database::len());
+        print!("Checking database... ");
+        if Database::contains(&transaction.transaction_id) {
+            println!("found - cancelling");
+            continue;
+        }
+        println!("not found - continuing");
+        new_transaction_counter += 1;
+
         let transaction_hash = generate_hash(&format!(
             "{}{}{}{}",
             transaction.amount,
@@ -38,28 +46,29 @@ async fn main() {
         // round up a little (better to lose out on 50 crowns than scam people because of bank fees)
         let amount = (transaction.amount + 100) / 400;
 
-        print!("Checking database... ");
-        if Database::contains(&transaction_hash.to_string()) {
-            println!("found - cancelling");
-            continue;
-        }
-        println!("not found - continuing");
-
         let _ = client
             .send_formatted_mail(
                 &transaction.address,
                 amount as u8,
                 transaction_hash.to_string(),
+                transaction.transaction_id.to_string(),
             )
             .await;
     }
+
+    println!();
+    Database::backup();
+
+    if new_transaction_counter == 0 {
+        return;
+    }
+
     hook::log(&format!(
         "Processed {} new transaction/s",
-        transactions.len()
+        new_transaction_counter,
     ))
     .await;
-
-    Database::backup();
+    Database::online_backup().await;
 }
 
 use std::hash::{DefaultHasher, Hash, Hasher};

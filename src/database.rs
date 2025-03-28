@@ -13,6 +13,7 @@ pub struct HashStruct {
     pub address: String,
     pub hashes: Vec<String>,
     pub transaction_hash: String,
+    pub transaction_id: String,
 
     pub manual: bool,
     pub deleted: bool,
@@ -22,9 +23,7 @@ pub struct Database {
     pub data: Vec<HashStruct>,
 }
 
-use crate::kbapi;
-use crate::kbapi::FetchError;
-
+use crate::hook;
 impl Database {
     pub fn add_hash_struct(data: HashStruct) {
         let mut db = DATABASE.lock().unwrap();
@@ -32,54 +31,14 @@ impl Database {
         Database::append_to_file("data.txt", &data).unwrap();
     }
 
-    pub fn contains(hash: &str) -> bool {
+    pub fn contains(checking_id: &str) -> bool {
         let db = DATABASE.lock().unwrap();
         for datastruct in &db.data {
-            if datastruct.transaction_hash == hash {
+            if datastruct.transaction_id == checking_id {
                 return true;
             }
         }
         false
-    }
-
-    pub fn trim_old(
-        new_data: Vec<kbapi::Transaction>,
-    ) -> Result<Vec<kbapi::Transaction>, FetchError> {
-        let data: &Vec<HashStruct> = &DATABASE.lock().unwrap().data;
-        // base cases
-        if data.is_empty() {
-            return Ok(new_data);
-        }
-        if new_data.is_empty() {
-            return Ok(Vec::new());
-        }
-        if data.len() == 1 {
-            if data[0].address == new_data[0].address {
-                return Ok(new_data);
-            }
-            return Err(FetchError::MissingData);
-        }
-
-        for i in (0..new_data.len()).rev() {
-            let mut continuous: bool = true;
-
-            for j in 0..=i {
-                if data[data.len() - 1 - j].address != new_data[i - j].address {
-                    continuous = false;
-                    break;
-                }
-            }
-
-            // only one element overlaps (cant be sure)
-            if continuous && i < 1 {
-                return Err(FetchError::MissingData);
-            }
-            // return only new elements
-            if continuous {
-                return Ok(new_data[(i + 1)..].to_vec());
-            }
-        }
-        Err(FetchError::MissingData)
     }
 
     pub fn len() -> usize {
@@ -140,6 +99,11 @@ impl Database {
         fs::create_dir_all("backups").unwrap();
         fs::copy("data.txt", &backup_name).unwrap();
         println!("done");
+    }
+
+    pub async fn online_backup() {
+        println!("Uploading backup to discord");
+        let _ = hook::send_file_webhook("./data.txt").await;
     }
 }
 
