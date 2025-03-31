@@ -52,6 +52,20 @@ fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str) -> Vec<u8> {
     photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "multiply");
 
     // APPLY photon_rs EFFECTS HERE
+    photon_rs::text::draw_text(
+        &mut photon_qr_image,
+        "Toto je malý text napsaný rustem",
+        50,
+        50,
+        50_f32,
+    );
+    photon_rs::text::draw_text(
+        &mut photon_qr_image,
+        "Toto je velký text napsaný rustem",
+        50,
+        100,
+        120_f32,
+    );
 
     let final_image_rgba8 = convert_photon_to_rgba8(photon_qr_image);
 
