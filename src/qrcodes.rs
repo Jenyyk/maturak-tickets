@@ -39,28 +39,21 @@ fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str) -> Vec<u8> {
         .into_rgba8();
 
     let (header_width, header_height) = header_image.dimensions();
-    let (qr_width, qr_height) = qr_image.dimensions();
+    let (qr_width, _qr_height) = qr_image.dimensions();
 
-    let total_width = header_width + qr_width;
-    let total_height = std::cmp::max(header_height, qr_height);
+    let mut full_qr_image: RgbaImage = RgbaImage::new(header_width, header_height);
 
-    print!("dimensions: {}x{} ", total_width, total_height);
-
-    let mut final_image: RgbaImage = RgbaImage::new(total_width, total_height);
-
-    final_image
-        .copy_from(&header_image, 0, 0)
-        .expect("Failed to copy header");
-
-    final_image
-        .copy_from(&qr_image, header_width, 0)
+    full_qr_image
+        .copy_from(&qr_image, header_width - qr_width, 0)
         .expect("Failed to copy QR code");
 
-    let photon_image = open_image_from_rgba8(&final_image);
+    let mut photon_qr_image = open_image_from_rgba8(&full_qr_image);
+    let photon_header_image = open_image_from_rgba8(&header_image);
+    photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "multiply");
 
     // APPLY photon_rs EFFECTS HERE
 
-    let final_image_rgba8 = convert_photon_to_rgba8(photon_image);
+    let final_image_rgba8 = convert_photon_to_rgba8(photon_qr_image);
 
     // Encode final image into a PNG buffer
     let mut buf = Vec::new();
