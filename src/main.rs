@@ -52,6 +52,7 @@ async fn main() {
                 amount as u8,
                 transaction_hash.to_string(),
                 transaction.transaction_id.to_string(),
+                "normal",
             )
             .await;
     }

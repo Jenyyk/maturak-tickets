@@ -79,6 +79,7 @@ impl MailClient {
         ticket_amount: u8,
         transaction_hash: String,
         transaction_id: String,
+        ticket_type: &str,
     ) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
@@ -97,10 +98,10 @@ impl MailClient {
         let mut qr_codes: Vec<Vec<u8>> = Vec::new();
         for i in 0..ticket_amount {
             let ticket_hash = format!("{}{}", transaction_hash, i);
-            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash);
+            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
             qr_codes.push(qr_code_image);
 
-            println!("{} ", i);
+            println!("done with {} ", i + 1);
             hashes.push(ticket_hash);
         }
         println!("done");
