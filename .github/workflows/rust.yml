@@ -47,14 +47,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install AArch64 Cross Compilation Tools
+      - name: Install cross
         run: |
-          sudo apt update
-          sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-      - name: Add AArch64 Target
-        run: rustup target add aarch64-unknown-linux-gnu
+          cargo install cross
       - name: Build for AArch64 (Linux)
-        run: cargo build --release --target aarch64-unknown-linux-gnu --verbose
+        run: cross build --release --target aarch64-unknown-linux-gnu --verbose
       - name: Upload AArch64 Binary
         uses: actions/upload-artifact@v4
         with:
