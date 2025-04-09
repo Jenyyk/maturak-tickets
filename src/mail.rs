@@ -29,6 +29,8 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
 use crate::database::{Database, HashStruct};
 use crate::hook;
 use crate::qrcodes;
+use rayon::prelude::*;
+use std::sync::Mutex;
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
         init_crypto();
@@ -94,20 +96,28 @@ impl MailClient {
             html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
         println!("Generating QR codes... ");
-        let mut hashes: Vec<String> = Vec::new();
-        let mut qr_codes: Vec<Vec<u8>> = Vec::new();
-        for i in 0..ticket_amount {
-            let ticket_hash = format!("{}{}", transaction_hash, i);
-            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
-            qr_codes.push(qr_code_image);
+        let hashes: Mutex<Vec<String>> = Mutex::new(Vec::new());
+        let qr_codes: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
+        (0_usize..ticket_amount as usize)
+            .collect::<Vec<usize>>()
+            .par_iter()
+            .for_each(|&i| {
+                let ticket_hash = format!("{}{}", transaction_hash, i);
+                let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
+                {
+                    let mut hashes_guard = hashes.lock().unwrap();
+                    hashes_guard.push(ticket_hash);
+                }
 
-            println!("done with {} ", i + 1);
-            hashes.push(ticket_hash);
-        }
+                {
+                    let mut qr_codes_guard = qr_codes.lock().unwrap();
+                    qr_codes_guard.push(qr_code_image);
+                }
+                println!("done with {} ", i + 1);
+            });
         println!("done");
 
-        // Now create references that live long enough
-        let qr_code_refs: Vec<&[u8]> = qr_codes.iter().map(|data| data.as_slice()).collect();
+        let qr_code_refs: Vec<Vec<u8>> = qr_codes.lock().unwrap().iter().cloned().collect();
 
         print!("Sending formatted e-mail to {}... ", receiver_mail);
         match self
@@ -115,7 +125,10 @@ impl MailClient {
                 vec![receiver_mail],
                 "Potvrzení lístků na maturitní ples".to_string(),
                 html_content,
-                qr_code_refs,
+                qr_code_refs
+                    .iter()
+                    .map(|data| data.as_slice())
+                    .collect::<Vec<&[u8]>>(),
             )
             .await
         {
@@ -124,7 +137,7 @@ impl MailClient {
                 print!("Adding to database... ");
                 Database::add_hash_struct(HashStruct {
                     address: receiver_mail.to_string(),
-                    hashes,
+                    hashes: hashes.lock().unwrap().clone(),
                     transaction_hash,
                     transaction_id,
                     manual: false,
