@@ -80,7 +80,7 @@ impl MailClient {
         transaction_hash: String,
         transaction_id: String,
         ticket_type: &str,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut html_content = read_html_content().unwrap();
 
         // Tohle nám přineslo národní obrození prosím pěkně
@@ -133,7 +133,7 @@ impl MailClient {
                 println!("done");
             }
             Err(e) => {
-                hook::panic(&format!("e-mail for {} did not send", receiver_mail)).await;
+                hook::panic_block(&format!("e-mail for {} did not send", receiver_mail));
                 println!("failed with Error {}, aborting", e)
             }
         };
