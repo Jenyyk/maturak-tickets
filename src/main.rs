@@ -6,9 +6,35 @@ mod qrcodes;
 
 use crate::database::Database;
 use mail::MailClient;
+use rand::Rng;
 
 #[tokio::main]
 async fn main() {
+    // manual sponsor ticket hadling
+    let args_raw: Vec<String> = std::env::args().collect();
+    let mut args = args_raw.iter();
+
+    let mut manual_insertion: bool = false;
+    let mut man_email: String = "".to_string();
+    let mut man_amount: u8 = 0;
+    let mut man_type: String = "normal".to_string();
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-m" | "--manual" => manual_insertion = true,
+            "-e" | "--email" => man_email = args.next().cloned().expect("Empty flag set"),
+            "-t" | "--type" => man_type = args.next().cloned().expect("Empty flag set"),
+            "-a" | "--amount" => {
+                man_amount = args
+                    .next()
+                    .cloned()
+                    .expect("Empty flag set")
+                    .parse::<u8>()
+                    .unwrap()
+            }
+            _ => {}
+        }
+    }
+
     let transactions = bankapi::get_transactions();
     if transactions.is_empty() {
         println!();
@@ -58,6 +84,29 @@ async fn main() {
     }
 
     println!();
+    if manual_insertion {
+        println!("Handling manual sponsor mail");
+        // random salt is acceptable here as manual mails will only be sent out once (i hope lol)
+        let transaction_hash = generate_hash(&format!(
+            "{}{}",
+            &man_email[..=5],
+            rand::rng().random::<u16>()
+        ));
+        if (client
+            .send_formatted_mail(
+                &man_email.clone(),
+                man_amount,
+                transaction_hash.to_string(),
+                man_email,
+                &man_type,
+            )
+            .await)
+            .is_ok()
+        {
+            println!("Succesfully handled manual insertion.");
+            hook::log("Success on manual ticket insertion.").await;
+        }
+    }
     Database::backup();
 
     if new_transaction_counter == 0 {
