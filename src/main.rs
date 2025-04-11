@@ -5,8 +5,11 @@ mod mail;
 mod qrcodes;
 
 use crate::database::Database;
+use crate::database::HashStruct;
 use mail::MailClient;
 use rand::Rng;
+use rayon::prelude::*;
+use std::sync::Mutex;
 
 #[tokio::main]
 async fn main() {
@@ -15,9 +18,9 @@ async fn main() {
     let mut args = args_raw.iter();
 
     let mut manual_insertion: bool = false;
-    let mut man_email: String = "".to_string();
+    let mut man_email: String = String::new();
     let mut man_amount: u8 = 0;
-    let mut man_type: String = "normal".to_string();
+    let mut man_type: String = String::from("normal");
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-m" | "--manual" => manual_insertion = true,
@@ -72,15 +75,35 @@ async fn main() {
         // round up a little (better to lose out on 50 crowns than scam people because of bank fees)
         let amount = (transaction.amount + 100) / 400;
 
-        let _ = client
+        // Generate vector of QR code slices and return their hashes
+        let (hashes, qr_code_vector) =
+            generate_qr_vector(&transaction_hash.to_string(), amount as usize, "normal");
+        // Generate a HashStruct now to pass to email function and add to database
+        let hash_struct: HashStruct = HashStruct {
+            address: transaction.address.clone(),
+            hashes,
+            transaction_hash: transaction_hash.to_string(),
+            transaction_id: transaction.transaction_id.clone(),
+            manual: false,
+            deleted: false,
+        };
+
+        if client
             .send_formatted_mail(
-                &transaction.address,
+                &hash_struct,
                 amount as u8,
-                transaction_hash.to_string(),
-                transaction.transaction_id.to_string(),
-                "normal",
+                qr_code_vector
+                    .iter()
+                    .map(|data| data.as_slice())
+                    .collect::<Vec<&[u8]>>(),
             )
-            .await;
+            .await
+            .is_ok()
+        {
+            Database::add_hash_struct(hash_struct);
+        } else {
+            hook::panic("Mail se neposlal, informace o mailu:").await; // TODO! Implement Transaction.to_string() a HashStruct.to_string()
+        }
     }
 
     println!();
@@ -92,20 +115,38 @@ async fn main() {
             &man_email[..=5],
             rand::rng().random::<u16>()
         ));
-        if (client
+        let (hashes, qr_code_vector) = generate_qr_vector(
+            &transaction_hash.to_string(),
+            man_amount as usize,
+            &man_type,
+        );
+        let hash_struct: HashStruct = HashStruct {
+            address: man_email,
+            hashes,
+            transaction_hash: transaction_hash.to_string(),
+            transaction_id: "manual transaction".to_string(),
+            manual: true,
+            deleted: false,
+        };
+
+        if client
             .send_formatted_mail(
-                &man_email.clone(),
+                &hash_struct,
                 man_amount,
-                transaction_hash.to_string(),
-                man_email,
-                &man_type,
+                qr_code_vector
+                    .iter()
+                    .map(|data| data.as_slice())
+                    .collect::<Vec<&[u8]>>(),
             )
-            .await)
+            .await
             .is_ok()
         {
-            println!("Succesfully handled manual insertion.");
-            hook::log("Success on manual ticket insertion.").await;
+            hook::log("handled CLI insertion").await;
+            Database::add_hash_struct(hash_struct);
+        } else {
+            hook::panic("manual sponsor mail did not send").await;
         }
+        println!("Manual CLI insertion handled");
     }
     Database::backup();
 
@@ -126,4 +167,37 @@ pub fn generate_hash(t: &str) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
+}
+
+fn generate_qr_vector(
+    transaction_hash: &str,
+    amount: usize,
+    ticket_type: &str,
+) -> (Vec<String>, Vec<Vec<u8>>) {
+    println!("Generating QR codes... ");
+    let hashes: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    let qr_codes: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
+
+    // Generate in parallel
+    (0..amount)
+        .collect::<Vec<usize>>()
+        .par_iter()
+        .for_each(|&i| {
+            let ticket_hash = format!("{}{}", transaction_hash, i);
+            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
+
+            let mut hashes_guard = hashes.lock().unwrap();
+            hashes_guard.push(ticket_hash);
+
+            let mut qr_codes_guard = qr_codes.lock().unwrap();
+            qr_codes_guard.push(qr_code_image);
+
+            println!("done with {}", i + 1);
+        });
+
+    let hashes_result = hashes.lock().unwrap().clone();
+    let qr_code_vector = qr_codes.lock().unwrap().clone();
+
+    println!("done");
+    (hashes_result, qr_code_vector)
 }

@@ -26,11 +26,8 @@ fn read_html_content() -> Result<String, Box<dyn Error>> {
     Ok(std::fs::read_to_string("message.html")?)
 }
 
-use crate::database::{Database, HashStruct};
-use crate::hook;
-use crate::qrcodes;
-use rayon::prelude::*;
-use std::sync::Mutex;
+use crate::database::HashStruct;
+
 impl MailClient {
     pub async fn new() -> Result<Self, Box<dyn Error>> {
         init_crypto();
@@ -77,11 +74,9 @@ impl MailClient {
     // Formats e-mail and sends it
     pub async fn send_formatted_mail(
         &mut self,
-        receiver_mail: &str,
+        mail_details: &HashStruct,
         ticket_amount: u8,
-        transaction_hash: String,
-        transaction_id: String,
-        ticket_type: &str,
+        qr_code_refs: Vec<&[u8]>,
     ) -> Result<(), Box<dyn Error>> {
         let mut html_content = read_html_content().unwrap();
 
@@ -95,61 +90,15 @@ impl MailClient {
         html_content =
             html_content.replace("{ticket_amount}", &ticket_amount_formatted.to_string());
 
-        println!("Generating QR codes... ");
-        let hashes: Mutex<Vec<String>> = Mutex::new(Vec::new());
-        let qr_codes: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
-        (0_usize..ticket_amount as usize)
-            .collect::<Vec<usize>>()
-            .par_iter()
-            .for_each(|&i| {
-                let ticket_hash = format!("{}{}", transaction_hash, i);
-                let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
-                {
-                    let mut hashes_guard = hashes.lock().unwrap();
-                    hashes_guard.push(ticket_hash);
-                }
-
-                {
-                    let mut qr_codes_guard = qr_codes.lock().unwrap();
-                    qr_codes_guard.push(qr_code_image);
-                }
-                println!("done with {} ", i + 1);
-            });
-        println!("done");
-
-        let qr_code_refs: Vec<Vec<u8>> = qr_codes.lock().unwrap().iter().cloned().collect();
-
-        print!("Sending formatted e-mail to {}... ", receiver_mail);
-        match self
-            .send_mail(
-                vec![receiver_mail],
-                "Potvrzení lístků na maturitní ples".to_string(),
-                html_content,
-                qr_code_refs
-                    .iter()
-                    .map(|data| data.as_slice())
-                    .collect::<Vec<&[u8]>>(),
-            )
-            .await
-        {
-            Ok(()) => {
-                println!("Sent!");
-                print!("Adding to database... ");
-                Database::add_hash_struct(HashStruct {
-                    address: receiver_mail.to_string(),
-                    hashes: hashes.lock().unwrap().clone(),
-                    transaction_hash,
-                    transaction_id,
-                    manual: false,
-                    deleted: false,
-                });
-                println!("done");
-            }
-            Err(e) => {
-                hook::panic(&format!("e-mail for {} did not send", receiver_mail)).await;
-                println!("failed with Error {}, aborting", e)
-            }
-        };
+        print!("Sending formatted e-mail to {}... ", &mail_details.address);
+        self.send_mail(
+            vec![&mail_details.address],
+            "Potvrzení lístků na maturitní ples".to_string(),
+            html_content,
+            qr_code_refs,
+        )
+        .await?;
+        println!("Sent!");
         Ok(())
     }
 }
