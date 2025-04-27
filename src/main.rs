@@ -54,6 +54,15 @@ async fn main() {
 
     let mut new_transaction_counter = 0;
     for transaction in &transactions {
+        // check for dumbasses
+        if &transaction.address == "prosím zadejte svůj e-mail" {
+            hook::warn(&format!(
+                "Hej nějakej trouba nezadal e-mail xdd, detaily transakce: {}",
+                &transaction.to_string()
+            ))
+            .await;
+            continue;
+        }
         println!();
         println!("Working on client {}", transaction.address);
         print!("Checking database... ");
@@ -102,7 +111,7 @@ async fn main() {
         {
             Database::add_hash_struct(hash_struct);
         } else {
-            hook::panic("Mail se neposlal, informace o mailu:").await; // TODO! Implement Transaction.to_string() a HashStruct.to_string()
+            hook::panic("Mail se neposlal, informace o mailu:").await; // TODO! Implement HashStruct.to_string()
         }
     }
 

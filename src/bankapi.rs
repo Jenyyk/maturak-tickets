@@ -8,6 +8,16 @@ pub struct Transaction {
     pub transaction_id: String,
 }
 
+use std::fmt;
+impl fmt::Display for Transaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "\nmessage: {}\ndate: {}\namount: {}\nid: {}",
+            self.address, self.date, self.amount, self.transaction_id
+        )
+    }
+}
 pub fn get_transactions() -> Vec<Transaction> {
     fetch_data(20)
 }
@@ -43,6 +53,12 @@ fn fetch_data(days_back: u32) -> Vec<Transaction> {
             address: "jan.krivsky@maturak26ab.cz".to_string(),
             date: "19.3.".to_string(),
             transaction_id: "2".to_string(),
+        },
+        Transaction {
+            amount: 3160,
+            address: "prosím zadejte svůj e-mail".to_string(),
+            date: "18.6.".to_string(),
+            transaction_id: "ahoj radečku".to_string(),
         },
         // Transaction {
         //     amount: 750,
