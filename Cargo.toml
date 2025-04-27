@@ -12,7 +12,7 @@ mail-send = { version = "0.5", features = ["builder"] }
 once_cell = "1.21.1"
 openssl = { version = "0.10", features = ["vendored"] }
 qrcode = "0.14.1"
-photon-rs = { git = "https://github.com/Jenyyk/photon.git", branch = "text-resize" }
+photon-rs = { git = "https://github.com/silvia-odwyer/photon.git"}
 reqwest = { version = "0.12.15", features = ["json", "multipart"] }
 rustls = "0.23.23"
 serde = { version = "1.0.219", features = ["derive"] }
