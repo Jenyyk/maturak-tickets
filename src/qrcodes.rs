@@ -3,6 +3,8 @@ use image::{DynamicImage, GenericImage, ImageReader, RgbaImage};
 use qrcode::{types::EcLevel, QrCode};
 use std::io::Cursor;
 
+use crate::database::Database;
+
 pub fn generate_qr_code(qr_content: &str, style_design: &str) -> Vec<u8> {
     println!("Generating hash: {}", qr_content);
 
@@ -54,17 +56,10 @@ fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str) -> Vec<u8> {
     // APPLY photon_rs EFFECTS HERE
     photon_rs::text::draw_text(
         &mut photon_qr_image,
-        "Toto je malý text napsaný rustem",
+        &format!("lístek č. {}", Database::get_ticket_count()),
         50,
         50,
         50_f32,
-    );
-    photon_rs::text::draw_text(
-        &mut photon_qr_image,
-        "Toto je velký text napsaný rustem",
-        50,
-        100,
-        120_f32,
     );
 
     let final_image_rgba8 = convert_photon_to_rgba8(photon_qr_image);

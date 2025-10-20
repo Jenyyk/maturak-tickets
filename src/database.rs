@@ -20,7 +20,8 @@ pub struct HashStruct {
 }
 
 pub struct Database {
-    pub data: Vec<HashStruct>,
+    ticket_count: u32,
+    data: Vec<HashStruct>,
 }
 
 use crate::hook;
@@ -39,6 +40,11 @@ impl Database {
             }
         }
         false
+    }
+
+    pub fn get_ticket_count() -> u32 {
+        let db = DATABASE.lock().unwrap();
+        db.ticket_count
     }
 
     pub fn len() -> usize {
@@ -109,7 +115,9 @@ impl Database {
 
 // Global singleton instance
 static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
+    let data = Database::load_from_file("./data.txt");
     Mutex::new(Database {
-        data: Database::load_from_file("./data.txt"),
+        ticket_count: data.len() as u32,
+        data: data,
     })
 });
