@@ -121,3 +121,9 @@ static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
         data: data,
     })
 });
+
+impl ToString for HashStruct {
+    fn to_string(&self) -> String {
+        format!("Adresa: {}\nID transakce: {}", self.address, self.transaction_id)
+    }
+}
