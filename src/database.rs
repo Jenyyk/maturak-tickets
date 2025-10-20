@@ -3,6 +3,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
+    fmt::Display,
     fs::{self, File, OpenOptions},
     io::{self, BufRead, Write},
     sync::Mutex,
@@ -118,12 +119,16 @@ static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
     let data = Database::load_from_file("./data.txt");
     Mutex::new(Database {
         ticket_count: data.len() as u32,
-        data: data,
+        data,
     })
 });
 
-impl ToString for HashStruct {
-    fn to_string(&self) -> String {
-        format!("Adresa: {}\nID transakce: {}", self.address, self.transaction_id)
+impl Display for HashStruct {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "Adresa: {}\nID transakce: {}",
+            self.address, self.transaction_id
+        )
     }
 }

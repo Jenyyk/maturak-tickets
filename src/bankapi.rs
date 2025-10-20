@@ -35,14 +35,12 @@ fn fetch_data(days_back: u32) -> Vec<Transaction> {
         get_today()
     );
 
-    vec![
-        Transaction {
-            amount: 400,
-            address: "listky@maturak26ab.cz".to_string(),
-            date: "19.3.".to_string(),
-            transaction_id: "0".to_string(),
-        },
-    ]
+    vec![Transaction {
+        amount: 400,
+        address: "listky@maturak26ab.cz".to_string(),
+        date: "19.3.".to_string(),
+        transaction_id: "3".to_string(),
+    }]
 }
 
 use chrono::{Duration, Local};

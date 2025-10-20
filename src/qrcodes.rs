@@ -51,15 +51,26 @@ fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str) -> Vec<u8> {
 
     let mut photon_qr_image = open_image_from_rgba8(&full_qr_image);
     let photon_header_image = open_image_from_rgba8(&header_image);
-    photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "multiply");
+    photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "normal");
+
+    let ticket_num = Database::get_ticket_count() + 1;
+    let mut ticket_text = String::new();
+    ticket_text.push('D');
+    ticket_text.push_str(match ticket_num {
+        ..=9 => "00",
+        10..=99 => "0",
+        _ => "",
+    });
+    ticket_text.push_str(&ticket_num.to_string());
 
     // APPLY photon_rs EFFECTS HERE
     photon_rs::text::draw_text(
         &mut photon_qr_image,
-        &format!("lístek č. {}", Database::get_ticket_count()),
-        50,
-        50,
-        50_f32,
+        &ticket_text,
+        20,
+        (header_height - 100) as i32,
+        80_f32,
+        photon_rs::Rgb::new(24, 24, 24),
     );
 
     let final_image_rgba8 = convert_photon_to_rgba8(photon_qr_image);

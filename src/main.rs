@@ -112,7 +112,11 @@ async fn main() {
         {
             Database::add_hash_struct(hash_struct);
         } else {
-            hook::panic(&format!("Mail se neposlal, informace o mailu: {}", hash_struct.to_string())).await; // TODO! Implement HashStruct.to_string()
+            hook::panic(&format!(
+                "Mail se neposlal, informace o mailu: {}",
+                hash_struct
+            ))
+            .await;
         }
     }
 
