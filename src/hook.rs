@@ -104,3 +104,15 @@ pub fn warn_block(text: &str) {
 pub fn panic_block(text: &str) {
     block_on(panic(text));
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+
+//     #[tokio::test]
+//     async fn test_hook_validity() {
+//         log("Test validity webhooků").await;
+//         warn("Test validity webhooků").await;
+//         panic("Test validity webhooků").await;
+//     }
+// }

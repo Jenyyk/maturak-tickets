@@ -38,33 +38,10 @@ fn fetch_data(days_back: u32) -> Vec<Transaction> {
     vec![
         Transaction {
             amount: 400,
-            address: "jan.krivsky@maturak26ab.cz".to_string(),
+            address: "listky@maturak26ab.cz".to_string(),
             date: "19.3.".to_string(),
             transaction_id: "0".to_string(),
         },
-        Transaction {
-            amount: 800,
-            address: "listky@maturak26ab.cz".to_string(),
-            date: "19.3.".to_string(),
-            transaction_id: "1".to_string(),
-        },
-        Transaction {
-            amount: 3160,
-            address: "jan.krivsky@maturak26ab.cz".to_string(),
-            date: "19.3.".to_string(),
-            transaction_id: "2".to_string(),
-        },
-        Transaction {
-            amount: 3160,
-            address: "prosím zadejte svůj e-mail".to_string(),
-            date: "18.6.".to_string(),
-            transaction_id: "ahoj radečku".to_string(),
-        },
-        // Transaction {
-        //     amount: 750,
-        //     address: "roub@maturak26ab.cz".to_string(),
-        //     date: "19.3.".to_string(),
-        // },
     ]
 }
 
