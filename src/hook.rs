@@ -85,13 +85,13 @@ pub async fn send_file_webhook(file_path: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn log(text: &str) {
-    let _ = send_webhook(&format!("-# Log: {}", text), 0_u8).await;
+    let _ = send_webhook(&format!("-# Log:\n{}", text), 0_u8).await;
 }
 pub async fn warn(text: &str) {
-    let _ = send_webhook(&format!(":warning: Varování: {}", text), 1_u8).await;
+    let _ = send_webhook(&format!(":warning: Varování:\n{}", text), 1_u8).await;
 }
 pub async fn panic(text: &str) {
-    let _ = send_webhook(&format!("## :red_square: POPLACH: {}", text), 2_u8).await;
+    let _ = send_webhook(&format!("## :red_square: POPLACH:\n{}", text), 2_u8).await;
 }
 
 use futures::executor::block_on;
