@@ -2104,6 +2104,7 @@ dependencies = [
 [[package]]
 name = "photon-rs"
 version = "0.3.3"
+source = "git+https://github.com/Jenyyk/photon?branch=expose_text#cda8cbee6a067dc4daa31036d873a7f53de65cb6"
 dependencies = [
  "base64 0.13.1",
  "console_error_panic_hook",
