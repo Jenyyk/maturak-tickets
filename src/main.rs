@@ -38,7 +38,7 @@ async fn main() {
         }
     }
 
-    let transactions = bankapi::get_transactions();
+    let transactions = bankapi::get_transactions().await;
     if transactions.is_empty() {
         println!();
         println!("No new transactions found, goodbye!");
