@@ -65,11 +65,12 @@ async fn main() {
         new_transaction_counter += 1;
 
         let transaction_hash = generate_hash(&format!(
-            "{}{}{}{}",
+            "{}{}{}{}{}",
             transaction.amount,
             transaction.address,
             transaction.date,
-            Database::len()
+            transaction.transaction_id,
+            Database::len(),
         ));
 
         // round up a little (better to lose out on 50 crowns than scam people because of bank fees)
@@ -192,13 +193,15 @@ fn generate_qr_vector(
     let hashes: Mutex<Vec<String>> = Mutex::new(Vec::new());
     let qr_codes: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
 
+    let start_ticket_count = Database::get_ticket_count() + 1;
+
     // Generate in parallel
     (0..amount)
         .collect::<Vec<usize>>()
         .par_iter()
         .for_each(|&i| {
             let ticket_hash = format!("{}{}", transaction_hash, i);
-            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type);
+            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type, start_ticket_count + i as u32);
 
             let mut hashes_guard = hashes.lock().unwrap();
             hashes_guard.push(ticket_hash);

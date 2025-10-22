@@ -30,6 +30,7 @@ impl Database {
     pub fn add_hash_struct(data: HashStruct) {
         let mut db = DATABASE.lock().unwrap();
         db.data.push(data.clone());
+        db.ticket_count += data.hashes.len() as u32;
         Database::append_to_file("data.txt", &data).unwrap();
     }
 
@@ -117,8 +118,12 @@ impl Database {
 // Global singleton instance
 static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
     let data = Database::load_from_file("./data.txt");
+    let mut ticket_count: u32 = 0;
+    for hashstruct in &data {
+        ticket_count += hashstruct.hashes.len() as u32;
+    }
     Mutex::new(Database {
-        ticket_count: data.len() as u32,
+        ticket_count,
         data,
     })
 });

@@ -4,9 +4,7 @@ use photon_rs::PhotonImage;
 use qrcode::{types::EcLevel, QrCode};
 use std::io::Cursor;
 
-use crate::database::Database;
-
-pub fn generate_qr_code(qr_content: &str, style_design: &str) -> Vec<u8> {
+pub fn generate_qr_code(qr_content: &str, style_design: &str, ticket_number: u32) -> Vec<u8> {
     println!("Generating hash: {}", qr_content);
 
     // Generate the QR code
@@ -24,10 +22,10 @@ pub fn generate_qr_code(qr_content: &str, style_design: &str) -> Vec<u8> {
         .expect("Failed to write image to buffer");
 
     // Style the QR code by merging with header image
-    style_qr_code(buf, style_design, qr_content)
+    style_qr_code(buf, style_design, qr_content, ticket_number)
 }
 
-fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str, hash: &str) -> Vec<u8> {
+fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str, hash: &str, ticket_number: u32) -> Vec<u8> {
     let qr_image = ImageReader::new(Cursor::new(qr_code_buf))
         .with_guessed_format()
         .expect("Failed to read QR buffer")
@@ -54,7 +52,7 @@ fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str, hash: &str) -> Vec<u8>
     let photon_header_image = open_image_from_rgba8(&header_image);
     photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "normal");
 
-    let ticket_num = Database::get_ticket_count() + 1;
+    let ticket_num = ticket_number;
     let mut ticket_text = String::new();
     ticket_text.push('D');
     ticket_text.push_str(match ticket_num {
