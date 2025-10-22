@@ -26,6 +26,16 @@ use dotenv::dotenv;
 use std::env;
 pub async fn fetch_data(days_back: u32) -> Vec<Transaction> {
     dotenv().ok();
+    // for testing purposes
+    if env::var("DEBUG").unwrap_or(String::from("false")) == "true" {
+        return vec![Transaction {
+            amount: 400,
+            address: String::from("listky@maturak26ab.cz"),
+            date: String::from("co já vim bru"),
+            transaction_id: String::from("0"),
+        }]
+    }
+
     let api_key = env::var("API_KEY").expect("No FIO API key found");
 
     let request_url = format!(
