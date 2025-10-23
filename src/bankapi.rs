@@ -19,7 +19,7 @@ impl fmt::Display for Transaction {
     }
 }
 pub async fn get_transactions() -> Vec<Transaction> {
-    fetch_data(20).await
+    fetch_data(7).await
 }
 
 use dotenv::dotenv;
@@ -68,7 +68,7 @@ pub async fn fetch_data(days_back: u32) -> Vec<Transaction> {
             address: tx["column16"]["value"]
                 .as_str()
                 .unwrap_or_default()
-                .to_string(),
+                .to_string().replace(":", "@"),
             date: millis_to_date(tx["column0"]["value"].as_i64().unwrap_or(0)),
             transaction_id: tx["column22"]["value"]
                 .as_i64()
