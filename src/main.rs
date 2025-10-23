@@ -61,6 +61,10 @@ async fn main() {
             println!("found - cancelling");
             continue;
         }
+        if Database::warned_yet(&transaction.transaction_id) {
+            println!("saved as invalid - cancelling");
+            continue;
+        }
         println!("not found - continuing");
         new_transaction_counter += 1;
 
@@ -117,6 +121,7 @@ async fn main() {
                     hash_struct,
                     why
                 )).await;
+                Database::add_invalid_transaction(hash_struct.transaction_id);
                 println!("Failed to send mail: {why:?}");
             }
         };
@@ -160,6 +165,7 @@ async fn main() {
             hook::log("handled CLI insertion").await;
             Database::add_hash_struct(hash_struct);
         } else {
+            Database::add_invalid_transaction(hash_struct.transaction_id);
             hook::panic("manual sponsor mail did not send").await;
         }
         println!("Manual CLI insertion handled");

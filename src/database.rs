@@ -5,7 +5,7 @@ use std::{
     error::Error,
     fmt::Display,
     fs::{self, File, OpenOptions},
-    io::{self, BufRead, Write},
+    io::{self, Write},
     sync::Mutex,
 };
 
@@ -20,8 +20,10 @@ pub struct HashStruct {
     pub deleted: bool,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Database {
     ticket_count: u32,
+    warned_ids: Vec<String>,
     data: Vec<HashStruct>,
 }
 
@@ -31,7 +33,18 @@ impl Database {
         let mut db = DATABASE.lock().unwrap();
         db.data.push(data.clone());
         db.ticket_count += data.hashes.len() as u32;
-        Database::append_to_file("data.txt", &data).unwrap();
+        db.save_to_file("data.txt").unwrap();
+    }
+
+    pub fn add_invalid_transaction(id: String) {
+        let mut db = DATABASE.lock().unwrap();
+        db.warned_ids.push(id);
+        db.save_to_file("data.txt").unwrap();
+    }
+
+    pub fn warned_yet(id: &String) -> bool {
+        let db = DATABASE.lock().unwrap();
+        db.warned_ids.contains(id)
     }
 
     pub fn contains(checking_id: &str) -> bool {
@@ -58,7 +71,7 @@ impl Database {
         len
     }
 
-    fn load_from_file(file_name: &str) -> Vec<HashStruct> {
+    fn load_from_file(file_name: &str) -> Database {
         // Ensure the file exists
         if File::open(file_name).is_err() {
             if let Ok(mut file) = File::create(file_name) {
@@ -67,35 +80,36 @@ impl Database {
             }
         }
 
-        // Now open the file safely for reading
+        // If we fail opening the database, just fail and warn
         let file = File::open(file_name);
-        if file.is_err() {
-            return Vec::new(); // Return empty if file still can't be opened
-        }
+        let file = file.inspect_err(|why| {
+            hook::warn_block(&format!("Failed to open database file: {:?}", why));
+            panic!("Failed to open database file: {}", why);
+        });
 
         let reader = io::BufReader::new(file.unwrap());
-        let mut data_list = Vec::new();
 
-        for line in reader.lines().map_while(Result::ok) {
-            if let Ok(entry) = serde_json::from_str::<HashStruct>(&line) {
-                if entry.manual {
-                    continue;
-                }
-                data_list.push(entry);
-            }
+        let mut database: Database = serde_json::from_reader(reader).unwrap_or(Database {ticket_count: 0, warned_ids: Vec::new(), data: Vec::new()});
+
+        // sanity check the ticket count (im lazy)
+        let mut ticket_count = 0;
+        for hash_struct in &database.data {
+            ticket_count += hash_struct.hashes.len() as u32;
         }
+        database.ticket_count = ticket_count;
 
-        data_list
+        database
     }
 
-    fn append_to_file(file_name: &str, data: &HashStruct) -> Result<(), Box<dyn Error>> {
-        let mut file = OpenOptions::new()
+    fn save_to_file(&self, file_name: &str) -> Result<(), Box<dyn Error>> {
+        let file = OpenOptions::new()
             .create(true)
-            .append(true)
+            .write(true)
             .open(file_name)?;
 
-        let json = serde_json::to_string(data)?;
-        writeln!(file, "{}", json)?; // Append each struct as a new JSON line
+        let writer = io::BufWriter::new(file);
+
+        serde_json::to_writer(writer, self)?;
         Ok(())
     }
 
@@ -117,12 +131,8 @@ impl Database {
 
 // Global singleton instance
 static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
-    let data = Database::load_from_file("./data.txt");
-    let mut ticket_count: u32 = 0;
-    for hashstruct in &data {
-        ticket_count += hashstruct.hashes.len() as u32;
-    }
-    Mutex::new(Database { ticket_count, data })
+    let data: Database = Database::load_from_file("./data.txt");
+    Mutex::new(data)
 });
 
 impl Display for HashStruct {
