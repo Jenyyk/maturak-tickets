@@ -89,7 +89,11 @@ impl Database {
 
         let reader = io::BufReader::new(file.unwrap());
 
-        let mut database: Database = serde_json::from_reader(reader).unwrap_or(Database {ticket_count: 0, warned_ids: Vec::new(), data: Vec::new()});
+        let mut database: Database = serde_json::from_reader(reader).unwrap_or(Database {
+            ticket_count: 0,
+            warned_ids: Vec::new(),
+            data: Vec::new(),
+        });
 
         // sanity check the ticket count (im lazy)
         let mut ticket_count = 0;
@@ -129,7 +133,6 @@ impl Database {
         let _ = hook::send_file_webhook("./data.txt").await;
     }
 
-    #[cfg(debug_assertions)]
     pub fn delete_data() {
         let mut db = DATABASE.lock().unwrap();
         db.data = vec![];
