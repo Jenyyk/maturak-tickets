@@ -23,6 +23,7 @@ async fn main() {
     let mut man_type: String = String::from("normal");
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "-d" | "--del-data" => {Database::delete_data();return},
             "-m" | "--manual" => manual_insertion = true,
             "-e" | "--email" => man_email = args.next().cloned().expect("Empty flag set"),
             "-t" | "--type" => man_type = args.next().cloned().expect("Empty flag set"),

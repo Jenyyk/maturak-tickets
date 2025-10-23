@@ -105,6 +105,7 @@ impl Database {
         let file = OpenOptions::new()
             .create(true)
             .write(true)
+            .truncate(true)
             .open(file_name)?;
 
         let writer = io::BufWriter::new(file);
@@ -126,6 +127,13 @@ impl Database {
     pub async fn online_backup() {
         println!("Uploading backup to discord");
         let _ = hook::send_file_webhook("./data.txt").await;
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn delete_data() {
+        let mut db = DATABASE.lock().unwrap();
+        db.data = vec![];
+        db.save_to_file("data.txt").unwrap();
     }
 }
 
