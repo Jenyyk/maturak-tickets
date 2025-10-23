@@ -201,7 +201,8 @@ fn generate_qr_vector(
         .par_iter()
         .for_each(|&i| {
             let ticket_hash = format!("{}{}", transaction_hash, i);
-            let qr_code_image = qrcodes::generate_qr_code(&ticket_hash, ticket_type, start_ticket_count + i as u32);
+            let qr_code_image =
+                qrcodes::generate_qr_code(&ticket_hash, ticket_type, start_ticket_count + i as u32);
 
             let mut hashes_guard = hashes.lock().unwrap();
             hashes_guard.push(ticket_hash);

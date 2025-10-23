@@ -122,10 +122,7 @@ static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
     for hashstruct in &data {
         ticket_count += hashstruct.hashes.len() as u32;
     }
-    Mutex::new(Database {
-        ticket_count,
-        data,
-    })
+    Mutex::new(Database { ticket_count, data })
 });
 
 impl Display for HashStruct {

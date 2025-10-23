@@ -28,18 +28,20 @@ pub async fn fetch_data(days_back: u32) -> Vec<Transaction> {
     dotenv().ok();
     // for testing purposes
     if env::var("DEBUG").unwrap_or(String::from("false")) == "true" {
-        return vec![Transaction {
-            amount: 800,
-            address: String::from("listky@maturak26ab.cz"),
-            date: String::from("co já vim bru"),
-            transaction_id: String::from("0"),
-        },
-        Transaction {
-            amount: 400,
-            address: String::from("listky@maturak26ab.cz"),
-            date: String::from("co já vim bru"),
-            transaction_id: String::from("2"),
-        }]
+        return vec![
+            Transaction {
+                amount: 800,
+                address: String::from("listky@maturak26ab.cz"),
+                date: String::from("co já vim bru"),
+                transaction_id: String::from("0"),
+            },
+            Transaction {
+                amount: 400,
+                address: String::from("listky@maturak26ab.cz"),
+                date: String::from("co já vim bru"),
+                transaction_id: String::from("2"),
+            },
+        ];
     }
 
     let api_key = env::var("API_KEY").expect("No FIO API key found");
@@ -68,19 +70,17 @@ pub async fn fetch_data(days_back: u32) -> Vec<Transaction> {
             address: tx["column16"]["value"]
                 .as_str()
                 .unwrap_or_default()
-                .to_string().replace(":", "@"),
+                .to_string()
+                .replace(":", "@"),
             date: millis_to_date(tx["column0"]["value"].as_i64().unwrap_or(0)),
-            transaction_id: tx["column22"]["value"]
-                .as_i64()
-                .unwrap_or(0)
-                .to_string(),
+            transaction_id: tx["column22"]["value"].as_i64().unwrap_or(0).to_string(),
         })
         .collect();
 
     transactions
 }
 
-use chrono::{Duration, Local, Utc, TimeZone};
+use chrono::{Duration, Local, TimeZone, Utc};
 fn get_today() -> String {
     Local::now().format("%Y-%m-%d").to_string()
 }

@@ -25,7 +25,12 @@ pub fn generate_qr_code(qr_content: &str, style_design: &str, ticket_number: u32
     style_qr_code(buf, style_design, qr_content, ticket_number)
 }
 
-fn style_qr_code(qr_code_buf: Vec<u8>, header_path: &str, hash: &str, ticket_number: u32) -> Vec<u8> {
+fn style_qr_code(
+    qr_code_buf: Vec<u8>,
+    header_path: &str,
+    hash: &str,
+    ticket_number: u32,
+) -> Vec<u8> {
     let qr_image = ImageReader::new(Cursor::new(qr_code_buf))
         .with_guessed_format()
         .expect("Failed to read QR buffer")
@@ -114,7 +119,7 @@ struct TextBuilder<'a> {
     bottom: Option<i32>,
     right: Option<i32>,
     color: Option<Rgb>,
-    size: Option<f32>
+    size: Option<f32>,
 }
 #[allow(dead_code)]
 impl<'a> TextBuilder<'a> {
@@ -127,7 +132,7 @@ impl<'a> TextBuilder<'a> {
             bottom: None,
             right: None,
             color: None,
-            size: None
+            size: None,
         }
     }
 
@@ -171,7 +176,7 @@ impl<'a> TextBuilder<'a> {
     fn estimate_width(&self) -> i32 {
         let text_len = self.text.as_ref().unwrap_or(&String::from("")).len();
         let size = self.size.unwrap_or(0.0);
-        (text_len as f32 * size * (1.0/2.0)) as i32
+        (text_len as f32 * size * (1.0 / 2.0)) as i32
     }
 
     fn write(self) {
@@ -182,12 +187,27 @@ impl<'a> TextBuilder<'a> {
         let mut y: i32 = 0;
         let size = self.size.unwrap_or(50.0);
 
-        if let Some(top) = self.top { y = top; }
-        if let Some(bot) = self.bottom { y = (image_height as i32) - (size as i32) - bot; }
+        if let Some(top) = self.top {
+            y = top;
+        }
+        if let Some(bot) = self.bottom {
+            y = (image_height as i32) - (size as i32) - bot;
+        }
 
-        if let Some(left) = self.left { x = left; }
-        if let Some(right) = self.right { x = (image_width as i32) - self.estimate_width() - right; }
+        if let Some(left) = self.left {
+            x = left;
+        }
+        if let Some(right) = self.right {
+            x = (image_width as i32) - self.estimate_width() - right;
+        }
 
-        photon_rs::text::draw_text(self.image, &self.text.unwrap_or(String::from("no text")), x, y, size, self.color.unwrap_or(Rgb::new(0, 0, 0)));
+        photon_rs::text::draw_text(
+            self.image,
+            &self.text.unwrap_or(String::from("no text")),
+            x,
+            y,
+            size,
+            self.color.unwrap_or(Rgb::new(0, 0, 0)),
+        );
     }
 }
