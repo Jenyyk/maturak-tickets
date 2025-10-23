@@ -67,6 +67,7 @@ impl MailClient {
             message = message.attachment("image/png", filename, *code);
         }
 
+        self.client.rset().await?;
         self.client.send(message).await?;
         Ok(())
     }

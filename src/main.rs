@@ -99,7 +99,7 @@ async fn main() {
             continue;
         }
 
-        if client
+        let mail_result = client
             .send_formatted_mail(
                 &hash_struct,
                 amount as u8,
@@ -108,17 +108,18 @@ async fn main() {
                     .map(|data| data.as_slice())
                     .collect::<Vec<&[u8]>>(),
             )
-            .await
-            .is_ok()
-        {
-            Database::add_hash_struct(hash_struct);
-        } else {
-            hook::panic(&format!(
-                "Mail se neposlal, informace o mailu: {}",
-                hash_struct
-            ))
             .await;
-        }
+        match mail_result {
+            Ok(_) => Database::add_hash_struct(hash_struct),
+            Err(why) => {
+                hook::panic(&format!(
+                    "Mail se neposlal, informace o mailu:\n{}\nChyba: {:?}",
+                    hash_struct,
+                    why
+                )).await;
+                println!("Failed to send mail: {why:?}");
+            }
+        };
     }
 
     println!();
