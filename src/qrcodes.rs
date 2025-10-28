@@ -183,23 +183,21 @@ impl<'a> TextBuilder<'a> {
         let image_width = self.image.get_width();
         let image_height = self.image.get_height();
 
-        let mut x: i32 = 0;
-        let mut y: i32 = 0;
         let size = self.size.unwrap_or(50.0);
 
-        if let Some(top) = self.top {
-            y = top;
-        }
-        if let Some(bot) = self.bottom {
-            y = (image_height as i32) - (size as i32) - bot;
-        }
+        let x = match (self.left, self.right) {
+            (Some(left), Some(_right)) => left,
+            (Some(left), None) => left,
+            (None, Some(right)) => (image_width as i32) - self.estimate_width() - right,
+            (None, None) => 0,
+        };
 
-        if let Some(left) = self.left {
-            x = left;
-        }
-        if let Some(right) = self.right {
-            x = (image_width as i32) - self.estimate_width() - right;
-        }
+        let y = match (self.top, self.bottom) {
+            (Some(top), Some(_bot)) => top,
+            (Some(top), None) => top,
+            (None, Some(bot)) => (image_height as i32) - (size as i32) - bot,
+            (None, None) => 0,
+        };
 
         photon_rs::text::draw_text(
             self.image,
