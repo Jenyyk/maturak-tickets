@@ -1,6 +1,4 @@
 mod bankapi;
-mod database;
-mod hook;
 mod mail;
 mod qrcodes;
 
@@ -10,6 +8,8 @@ use mail::MailClient;
 use rand::Rng;
 use rayon::prelude::*;
 use std::sync::Mutex;
+
+use shared::{database, hook};
 
 #[tokio::main]
 async fn main() {

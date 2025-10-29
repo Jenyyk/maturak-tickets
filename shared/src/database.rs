@@ -28,6 +28,7 @@ pub struct Database {
 }
 
 use crate::hook;
+
 impl Database {
     pub fn add_hash_struct(data: HashStruct) {
         let mut db = DATABASE.lock().unwrap();
@@ -130,6 +131,7 @@ impl Database {
 
     pub async fn online_backup() {
         println!("Uploading backup to discord");
+
         let _ = hook::send_file_webhook("./data.txt").await;
     }
 
