@@ -23,24 +23,7 @@ jobs:
       - name: Run Clippy
         run: cargo clippy -- -D warnings
 
-  build:
-    needs: lint_and_format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - name: Build
-        run: cargo build --release --verbose
-      - name: Upload Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-binary-x86_64
-          path: target/release/ticket-bot
-
-  build_aarch64:
+  build_bot:
     needs: lint_and_format
     runs-on: ubuntu-latest
     steps:
@@ -48,12 +31,28 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Install cross
-        run: |
-          cargo install cross
+        run: cargo install cross
       - name: Build for AArch64 (Linux)
-        run: cross build --release --target aarch64-unknown-linux-gnu --verbose
+        run: cross build --release --target aarch64-unknown-linux-gnu --package ticket-bot --verbose
       - name: Upload AArch64 Binary
         uses: actions/upload-artifact@v4
         with:
           name: built-binary-aarch64
           path: target/aarch64-unknown-linux-gnu/release/ticket-bot
+
+  build_server:
+    needs: lint_and_format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cross
+        run: cargo install cross
+      - name: Build for AArch64 (Linux)
+        run: cross build --release --target aarch64-unknown-linux-gnu --package database-server --verbose
+      - name: Upload AArch64 Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-binary-aarch64
+          path: target/aarch64-unknown-linux-gnu/release/database-server
