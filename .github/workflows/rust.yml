@@ -37,7 +37,7 @@ jobs:
       - name: Upload AArch64 Binary
         uses: actions/upload-artifact@v4
         with:
-          name: built-binary-aarch64
+          name: ticket-bot
           path: target/aarch64-unknown-linux-gnu/release/ticket-bot
 
   build_server:
@@ -54,5 +54,5 @@ jobs:
       - name: Upload AArch64 Binary
         uses: actions/upload-artifact@v4
         with:
-          name: built-binary-aarch64
+          name: database-server
           path: target/aarch64-unknown-linux-gnu/release/database-server
