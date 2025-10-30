@@ -93,8 +93,7 @@ async fn main() {
             hashes,
             transaction_hash: transaction_hash.to_string(),
             transaction_id: transaction.transaction_id.clone(),
-            manual: false,
-            deleted: false,
+            ..Default::default()
         };
         // check for dumbasses
         if &transaction.address == "prosím zadejte svůj e-mail" {
@@ -151,7 +150,7 @@ async fn main() {
             transaction_hash: transaction_hash.to_string(),
             transaction_id: "manual transaction".to_string(),
             manual: true,
-            deleted: false,
+            ..Default::default()
         };
 
         if client

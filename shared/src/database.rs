@@ -2,6 +2,7 @@ use chrono::Local;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
+    default::Default,
     error::Error,
     fmt::Display,
     fs::{self, File, OpenOptions},
@@ -9,6 +10,18 @@ use std::{
     sync::Mutex,
 };
 
+/// HashStruct
+///
+/// fields:
+/// * `address`: String
+/// * `hashes`: Vec<String>
+///   * a Vec oh QR code hashes belonging to this specific transaction
+/// * `transaction_hash`: String
+/// * `transaction_id`: String
+/// * `manual`: bool
+/// * `deleted`: bool
+/// * `seen`: Vec<usize>
+///   * A Vec of indexes to `hashes` to indicate which hashes have been seen in the event so far
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HashStruct {
     pub address: String,
@@ -18,6 +31,20 @@ pub struct HashStruct {
 
     pub manual: bool,
     pub deleted: bool,
+    pub seen: Vec<usize>,
+}
+impl Default for HashStruct {
+    fn default() -> Self {
+        HashStruct {
+            address: String::new(),
+            hashes: Vec::new(),
+            transaction_hash: String::new(),
+            transaction_id: String::new(),
+            manual: false,
+            deleted: false,
+            seen: Vec::new(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -56,6 +83,35 @@ impl Database {
             }
         }
         false
+    }
+
+    pub fn get_by_hash(checking_hash: &str) -> Option<HashStruct> {
+        let db = DATABASE.lock().unwrap();
+        db.data
+            .iter()
+            .find(|datastruct| datastruct.hashes.contains(&String::from(checking_hash)))
+            .cloned()
+    }
+
+    pub fn mark_ticket_seen(ticket_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let hash_struct = match Database::get_by_hash(ticket_hash) {
+            Some(hash_struct) => hash_struct,
+            None => return Err("Ticket hash not found".into()),
+        };
+        for (index, hash) in hash_struct.hashes.iter().cloned().enumerate() {
+            if hash == ticket_hash {
+                let mut db = DATABASE.lock().unwrap();
+                let in_db_struct: &mut HashStruct = db
+                    .data
+                    .iter_mut()
+                    .find(|datastruct| datastruct.hashes.contains(&String::from(ticket_hash)))
+                    .unwrap();
+                in_db_struct.seen.push(index);
+                break;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_ticket_count() -> u32 {

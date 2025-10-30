@@ -1,8 +1,8 @@
 // This code never being used is a good thing
 #![allow(dead_code)]
 
-use reqwest::multipart::{Form, Part};
 use reqwest::Client;
+use reqwest::multipart::{Form, Part};
 use serde_json::json;
 use std::error::Error;
 
