@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 actix-web = "4.11.0"
 shared = { path = "../shared" }
+openssl = { version = "0.10", features = ["vendored"] }
