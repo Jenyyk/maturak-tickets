@@ -22,7 +22,7 @@ use std::{
 /// * `deleted`: bool
 /// * `seen`: Vec<usize>
 ///   * A Vec of indexes to `hashes` to indicate which hashes have been seen in the event so far
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct HashStruct {
     pub address: String,
     pub hashes: Vec<String>,
@@ -32,19 +32,6 @@ pub struct HashStruct {
     pub manual: bool,
     pub deleted: bool,
     pub seen: Vec<usize>,
-}
-impl Default for HashStruct {
-    fn default() -> Self {
-        HashStruct {
-            address: String::new(),
-            hashes: Vec::new(),
-            transaction_hash: String::new(),
-            transaction_id: String::new(),
-            manual: false,
-            deleted: false,
-            seen: Vec::new(),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -130,11 +117,11 @@ impl Database {
 
     fn load_from_file(file_name: &str) -> Database {
         // Ensure the file exists
-        if File::open(file_name).is_err() {
-            if let Ok(mut file) = File::create(file_name) {
-                // Write an empty string to ensure it's a valid file
-                let _ = file.write_all(b"");
-            }
+        if File::open(file_name).is_err()
+            && let Ok(mut file) = File::create(file_name)
+        {
+            // Write an empty string to ensure it's a valid file
+            let _ = file.write_all(b"");
         }
 
         // If we fail opening the database, just fail and warn
