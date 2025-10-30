@@ -97,8 +97,16 @@ impl Database {
         let mut db = DATABASE.lock().unwrap();
         for hash_struct in &mut db.data {
             for (index, hash) in &mut hash_struct.hashes.iter().enumerate() {
-                if hash == ticket_hash {
-                    hash_struct.seen.remove(index);
+                if hash != ticket_hash {
+                    continue;
+                }
+                for (seen_index, seen_element) in
+                    hash_struct.seen.clone().into_iter().enumerate()
+                {
+                    if index != seen_element {
+                        continue;
+                    }
+                    hash_struct.seen.remove(seen_index);
                     db.save_to_file("data.txt").unwrap();
                     return Ok(());
                 }
