@@ -191,10 +191,16 @@ impl Database {
         let _ = hook::send_file_webhook("./data.txt").await;
     }
 
+    #[cfg(debug_assertions)]
     pub fn delete_data() {
         let mut db = DATABASE.lock().unwrap();
         db.data = vec![];
         db.save_to_file("data.txt").unwrap();
+    }
+
+    #[cfg(not(debug_assertions))]
+    pub fn delete_data() {
+        panic!("This function is only available in debug mode");
     }
 }
 
