@@ -7,8 +7,10 @@ use std::{
     fmt::Display,
     fs::{self, File, OpenOptions},
     io::{self, Write},
-    sync::Mutex,
+    sync::{LockResult, Mutex},
 };
+
+const DATABASE_PATH: &str = "./data.txt";
 
 /// HashStruct
 ///
@@ -43,27 +45,49 @@ pub struct Database {
 
 use crate::hook;
 
+// Recover database poisoning by reading last valid state from disk
+trait DatabaseHeal<T> {
+    fn heal(self) -> T;
+}
+impl<'a> DatabaseHeal<std::sync::MutexGuard<'a, Database>>
+    for LockResult<std::sync::MutexGuard<'a, Database>>
+{
+    fn heal(self) -> std::sync::MutexGuard<'a, Database> {
+        match self {
+            Ok(db) => db,
+            Err(poisoned_lock) => {
+                println!("Database was poisoned, recovering!");
+                hook::warn_block("Database was poisoned, recovering!");
+                DATABASE.clear_poison();
+                let mut db = poisoned_lock.into_inner();
+                *db = Database::load_from_file(DATABASE_PATH);
+                db
+            }
+        }
+    }
+}
+
 impl Database {
     pub fn add_hash_struct(data: HashStruct) {
-        let mut db = DATABASE.lock().unwrap();
+        let mut db = DATABASE.lock().heal();
         db.data.push(data.clone());
         db.ticket_count += data.hashes.len() as u32;
-        db.save_to_file("data.txt").unwrap();
+        db.save_to_file(DATABASE_PATH).unwrap();
     }
 
     pub fn add_invalid_transaction(id: String) {
-        let mut db = DATABASE.lock().unwrap();
+        let mut db = DATABASE.lock().heal();
         db.warned_ids.push(id);
-        db.save_to_file("data.txt").unwrap();
+        db.save_to_file(DATABASE_PATH).unwrap();
     }
 
     pub fn warned_yet(id: &String) -> bool {
-        let db = DATABASE.lock().unwrap();
+        let db = DATABASE.lock().heal();
         db.warned_ids.contains(id)
     }
 
     pub fn contains(checking_id: &str) -> bool {
-        let db = DATABASE.lock().unwrap();
+        let db = DATABASE.lock().heal();
         for datastruct in &db.data {
             if datastruct.transaction_id == checking_id {
                 return true;
@@ -73,7 +97,7 @@ impl Database {
     }
 
     pub fn get_by_hash(checking_hash: &str) -> Option<HashStruct> {
-        let db = DATABASE.lock().unwrap();
+        let db = DATABASE.lock().heal();
         db.data
             .iter()
             .find(|datastruct| datastruct.hashes.contains(&String::from(checking_hash)))
@@ -81,12 +105,12 @@ impl Database {
     }
 
     pub fn mark_ticket_seen(ticket_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let mut db = DATABASE.lock().unwrap();
+        let mut db = DATABASE.lock().heal();
         for hash_struct in &mut db.data {
             for (index, hash) in &mut hash_struct.hashes.iter().enumerate() {
                 if hash == ticket_hash {
                     hash_struct.seen.push(index);
-                    db.save_to_file("data.txt").unwrap();
+                    db.save_to_file(DATABASE_PATH).unwrap();
                     return Ok(());
                 }
             }
@@ -94,20 +118,18 @@ impl Database {
         Err("Ticket not found".into())
     }
     pub fn unmark_ticket_seen(ticket_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let mut db = DATABASE.lock().unwrap();
+        let mut db = DATABASE.lock().heal();
         for hash_struct in &mut db.data {
             for (index, hash) in &mut hash_struct.hashes.iter().enumerate() {
                 if hash != ticket_hash {
                     continue;
                 }
-                for (seen_index, seen_element) in
-                    hash_struct.seen.clone().into_iter().enumerate()
-                {
+                for (seen_index, seen_element) in hash_struct.seen.clone().into_iter().enumerate() {
                     if index != seen_element {
                         continue;
                     }
                     hash_struct.seen.remove(seen_index);
-                    db.save_to_file("data.txt").unwrap();
+                    db.save_to_file(DATABASE_PATH).unwrap();
                     return Ok(());
                 }
             }
@@ -116,13 +138,13 @@ impl Database {
     }
 
     pub fn get_ticket_count() -> u32 {
-        let db = DATABASE.lock().unwrap();
+        let db = DATABASE.lock().heal();
         db.ticket_count
     }
 
     pub fn len() -> usize {
         let mut len = 0;
-        let file = fs::read_to_string("data.txt").unwrap();
+        let file = fs::read_to_string(DATABASE_PATH).unwrap();
         for _line in file.lines() {
             len += 1;
         }
@@ -147,10 +169,13 @@ impl Database {
 
         let reader = io::BufReader::new(file.unwrap());
 
-        let mut database: Database = serde_json::from_reader(reader).unwrap_or(Database {
-            ticket_count: 0,
-            warned_ids: Vec::new(),
-            data: Vec::new(),
+        let mut database: Database = serde_json::from_reader(reader).unwrap_or_else(|why| {
+            hook::warn_block(&format!("Failed to deserialize database {}", why));
+            Database {
+                ticket_count: 0,
+                warned_ids: Vec::new(),
+                data: Vec::new(),
+            }
         });
 
         // sanity check the ticket count (im lazy)
@@ -182,21 +207,21 @@ impl Database {
         let backup_name = format!("backups/backup_{}.txt", timestamp);
 
         fs::create_dir_all("backups").unwrap();
-        fs::copy("data.txt", &backup_name).unwrap();
+        fs::copy(DATABASE_PATH, &backup_name).unwrap();
         println!("done");
     }
 
     pub async fn online_backup() {
         println!("Uploading backup to discord");
 
-        let _ = hook::send_file_webhook("./data.txt").await;
+        let _ = hook::send_file_webhook(DATABASE_PATH).await;
     }
 
     #[cfg(debug_assertions)]
     pub fn delete_data() {
-        let mut db = DATABASE.lock().unwrap();
+        let mut db = DATABASE.lock().heal();
         db.data = vec![];
-        db.save_to_file("data.txt").unwrap();
+        db.save_to_file(DATABASE_PATH).unwrap();
     }
 
     #[cfg(not(debug_assertions))]
@@ -207,7 +232,7 @@ impl Database {
 
 // Global singleton instance
 static DATABASE: Lazy<Mutex<Database>> = Lazy::new(|| {
-    let data: Database = Database::load_from_file("./data.txt");
+    let data: Database = Database::load_from_file(DATABASE_PATH);
     Mutex::new(data)
 });
 
@@ -219,4 +244,12 @@ impl Display for HashStruct {
             self.address, self.transaction_id
         )
     }
+}
+
+#[allow(unused_variables, unreachable_code)]
+#[cfg(debug_assertions)]
+pub fn debug_panic() {
+    let db = DATABASE.lock().unwrap();
+    panic!("Debug panic triggered");
+    drop(db);
 }

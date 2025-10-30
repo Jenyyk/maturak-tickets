@@ -84,25 +84,44 @@ pub async fn send_file_webhook(file_path: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub async fn log(text: &str) {
-    let _ = send_webhook(&format!("-# Log:\n{}", text), 0_u8).await;
+pub async fn log(text: impl Into<String>) {
+    let text = text.into();
+    let _ = send_webhook(&format!("-# Log:\n{}", &text), 0_u8).await;
 }
-pub async fn warn(text: &str) {
-    let _ = send_webhook(&format!(":warning: Varování:\n{}", text), 1_u8).await;
+pub async fn warn(text: impl Into<String>) {
+    let text = text.into();
+    let _ = send_webhook(&format!(":warning: Varování:\n{}", &text), 1_u8).await;
 }
-pub async fn panic(text: &str) {
-    let _ = send_webhook(&format!("## :red_square: POPLACH:\n{}", text), 2_u8).await;
+pub async fn panic(text: impl Into<String>) {
+    let text = text.into();
+    let _ = send_webhook(&format!("## :red_square: POPLACH:\n{}", &text), 2_u8).await;
 }
 
-use futures::executor::block_on;
-pub fn log_block(text: &str) {
-    block_on(log(text));
+pub fn log_block(text: impl Into<String>) {
+    spawn_new_runtime(log(text.into()));
 }
-pub fn warn_block(text: &str) {
-    block_on(warn(text));
+
+pub fn warn_block(text: impl Into<String>) {
+    spawn_new_runtime(warn(text.into()));
 }
-pub fn panic_block(text: &str) {
-    block_on(panic(text));
+
+pub fn panic_block(text: impl Into<String>) {
+    spawn_new_runtime(panic(text.into()));
+}
+
+fn spawn_new_runtime<F>(fut: F)
+where
+    F: std::future::Future<Output = ()> + Send + 'static,
+{
+    std::thread::spawn(move || {
+        // Create a new multi-threaded runtime with I/O + time drivers enabled.
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("failed to build tokio runtime");
+
+        rt.block_on(fut);
+    });
 }
 
 // #[cfg(test)]

@@ -4,12 +4,15 @@ use shared::database::Database;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
-        App::new().service(online_check).service(
-            web::resource("/ticket/{path}")
-                .route(web::get().to(get_ticket))
-                .route(web::patch().to(patch_ticket_seen))
-                .route(web::delete().to(delete_ticket_seen)),
-        )
+        App::new()
+            .service(online_check)
+            .service(
+                web::resource("/ticket/{path}")
+                    .route(web::get().to(get_ticket))
+                    .route(web::patch().to(patch_ticket_seen))
+                    .route(web::delete().to(delete_ticket_seen)),
+            )
+            .service(web::resource("/debug/panic").route(web::get().to(debug_panic)))
     })
     .bind(("0.0.0.0", 6767))?
     .run()
@@ -46,4 +49,15 @@ async fn delete_ticket_seen(path: web::Path<String>) -> impl Responder {
             _ => HttpResponse::InternalServerError().body(err.to_string()),
         },
     }
+}
+
+#[allow(unreachable_code)]
+#[cfg(debug_assertions)]
+async fn debug_panic() -> impl Responder {
+    shared::database::debug_panic();
+    HttpResponse::InternalServerError().body("Debug panic triggered")
+}
+#[cfg(not(debug_assertions))]
+async fn debug_panic() -> impl Responder {
+    HttpResponse::Forbidden().body("Only available in debug environments")
 }
