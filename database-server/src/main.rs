@@ -7,7 +7,8 @@ async fn main() -> std::io::Result<()> {
         App::new().service(online_check).service(
             web::resource("/ticket/{path}")
                 .route(web::get().to(get_ticket))
-                .route(web::patch().to(post_ticket)),
+                .route(web::patch().to(patch_ticket_seen))
+                .route(web::delete().to(delete_ticket_seen)),
         )
     })
     .bind(("0.0.0.0", 6767))?
@@ -27,9 +28,19 @@ async fn get_ticket(path: web::Path<String>) -> impl Responder {
     }
 }
 
-async fn post_ticket(path: web::Path<String>) -> impl Responder {
+async fn patch_ticket_seen(path: web::Path<String>) -> impl Responder {
     match Database::mark_ticket_seen(&path) {
-        Ok(()) => HttpResponse::Created().finish(),
+        Ok(()) => HttpResponse::Ok().finish(),
+        Err(err) => match err.to_string().as_str() {
+            "Ticket hash not found" => HttpResponse::NotFound().finish(),
+            _ => HttpResponse::InternalServerError().body(err.to_string()),
+        },
+    }
+}
+
+async fn delete_ticket_seen(path: web::Path<String>) -> impl Responder {
+    match Database::unmark_ticket_seen(&path) {
+        Ok(()) => HttpResponse::Ok().finish(),
         Err(err) => match err.to_string().as_str() {
             "Ticket hash not found" => HttpResponse::NotFound().finish(),
             _ => HttpResponse::InternalServerError().body(err.to_string()),

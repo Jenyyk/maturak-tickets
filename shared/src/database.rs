@@ -81,24 +81,30 @@ impl Database {
     }
 
     pub fn mark_ticket_seen(ticket_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let hash_struct = match Database::get_by_hash(ticket_hash) {
-            Some(hash_struct) => hash_struct,
-            None => return Err("Ticket hash not found".into()),
-        };
-        for (index, hash) in hash_struct.hashes.iter().cloned().enumerate() {
-            if hash == ticket_hash {
-                let mut db = DATABASE.lock().unwrap();
-                let in_db_struct: &mut HashStruct = db
-                    .data
-                    .iter_mut()
-                    .find(|datastruct| datastruct.hashes.contains(&String::from(ticket_hash)))
-                    .unwrap();
-                in_db_struct.seen.push(index);
-                break;
+        let mut db = DATABASE.lock().unwrap();
+        for hash_struct in &mut db.data {
+            for (index, hash) in &mut hash_struct.hashes.iter().enumerate() {
+                if hash == ticket_hash {
+                    hash_struct.seen.push(index);
+                    db.save_to_file("data.txt").unwrap();
+                    return Ok(());
+                }
             }
         }
-
-        Ok(())
+        Err("Ticket not found".into())
+    }
+    pub fn unmark_ticket_seen(ticket_hash: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let mut db = DATABASE.lock().unwrap();
+        for hash_struct in &mut db.data {
+            for (index, hash) in &mut hash_struct.hashes.iter().enumerate() {
+                if hash == ticket_hash {
+                    hash_struct.seen.remove(index);
+                    db.save_to_file("data.txt").unwrap();
+                    return Ok(());
+                }
+            }
+        }
+        Err("Ticket not found".into())
     }
 
     pub fn get_ticket_count() -> u32 {
