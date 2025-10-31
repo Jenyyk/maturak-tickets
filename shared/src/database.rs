@@ -163,14 +163,14 @@ impl Database {
         // If we fail opening the database, just fail and warn
         let file = File::open(file_name);
         let file = file.inspect_err(|why| {
-            hook::warn_block(&format!("Failed to open database file: {:?}", why));
+            hook::warn_block(format!("Failed to open database file: {:?}", why));
             panic!("Failed to open database file: {}", why);
         });
 
         let reader = io::BufReader::new(file.unwrap());
 
         let mut database: Database = serde_json::from_reader(reader).unwrap_or_else(|why| {
-            hook::warn_block(&format!("Failed to deserialize database {}", why));
+            hook::warn_block(format!("Failed to deserialize database {}", why));
             Database {
                 ticket_count: 0,
                 warned_ids: Vec::new(),
