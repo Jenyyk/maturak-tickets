@@ -1,5 +1,5 @@
-mod listener;
 mod broadcaster;
+mod listener;
 
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, web};
 use shared::database::Database;
@@ -11,7 +11,6 @@ const DATAB_PORT: u16 = 6767;
 const REPLY_PORT: u16 = 6768;
 /// port where we ourselves brodcast
 const BROAD_PORT: u16 = 6769;
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -7,6 +7,7 @@ unsafe extern "C" {
     fn brdc_getError() -> *const std::ffi::c_char;
 }
 
+#[allow(dead_code)]
 struct SocketHolder(u8);
 
 impl Drop for SocketHolder {
@@ -18,15 +19,15 @@ impl Drop for SocketHolder {
 }
 
 pub fn start_broadcast() {
-
     let msg = std::ffi::CString::new(crate::DATAB_PORT.to_string()).unwrap();
     let msg_len = msg.as_bytes().len();
 
     println!("Starting broadcast");
 
-    unsafe {
-        let stat = SocketHolder(brdc_startBrdcast(crate::BROAD_PORT, msg.as_ptr(), msg_len));
-        if stat.0 != 0 {
+    #[allow(unused_variables)]
+    let holder = unsafe {
+        let stat = brdc_startBrdcast(crate::BROAD_PORT, msg.as_ptr(), msg_len);
+        if stat != 0 {
             let mut error = brdc_getError();
 
             print!("Error: ");
@@ -36,9 +37,11 @@ pub fn start_broadcast() {
             }
             println!();
         }
-        println!("Broadcast started");
 
-        loop {}
+        SocketHolder(stat)
+    };
+    println!("Broadcast started");
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
-
 }
