@@ -1,8 +1,28 @@
+mod listener;
+mod broadcaster;
+
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, web};
 use shared::database::Database;
+use std::thread;
+
+/// port where the database is served
+const DATAB_PORT: u16 = 6767;
+/// port where we listen and reply to broadcasts
+const REPLY_PORT: u16 = 6768;
+/// port where we ourselves brodcast
+const BROAD_PORT: u16 = 6769;
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    thread::spawn(|| {
+        listener::reply_to_broadcasts();
+    });
+    thread::spawn(|| {
+        broadcaster::start_broadcast();
+    });
+
+    println!("Starting HTTP server");
     HttpServer::new(|| {
         App::new()
             .service(online_check)
@@ -14,7 +34,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/debug/panic").route(web::get().to(debug_panic)))
     })
-    .bind(("0.0.0.0", 6767))?
+    .bind(("0.0.0.0", DATAB_PORT))?
     .run()
     .await
 }
