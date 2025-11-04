@@ -1,19 +1,24 @@
+#[allow(dead_code)]
 #[link(name = "brdc_bacon", kind = "dylib")]
 unsafe extern "C" {
-    fn brdc_startBrdcast(port: u16, msg: *const std::ffi::c_char, msg_len: usize) -> u8;
+    fn brdc_init() -> u8;
+    fn brdc_deinit();
 
-    fn brdc_stopBrdcast();
+    fn brdc_startBrdcast(port: u16, msg: *const std::ffi::c_char, msg_len: usize) -> u16;
+    fn brdc_stopBrdcast(sid: u16);
 
     fn brdc_getError() -> *const std::ffi::c_char;
+
+    fn brdc_enableLogging();
 }
 
 #[allow(dead_code)]
-struct SocketHolder(u8);
+struct SocketHolder(u16);
 
 impl Drop for SocketHolder {
     fn drop(&mut self) {
         unsafe {
-            brdc_stopBrdcast();
+            brdc_stopBrdcast(self.0);
         }
     }
 }
@@ -26,8 +31,13 @@ pub fn start_broadcast() {
 
     #[allow(unused_variables)]
     let holder = unsafe {
-        let stat = brdc_startBrdcast(crate::BROAD_PORT, msg.as_ptr(), msg_len);
-        if stat != 0 {
+        assert_eq!(brdc_init(), 1);
+
+        #[cfg(debug_assertions)]
+        brdc_enableLogging();
+
+        let id = brdc_startBrdcast(crate::BROAD_PORT, msg.as_ptr(), msg_len);
+        if id == 0 {
             let mut error = brdc_getError();
 
             print!("Error: ");
@@ -38,10 +48,21 @@ pub fn start_broadcast() {
             println!();
         }
 
-        SocketHolder(stat)
+        SocketHolder(id)
     };
     println!("Broadcast started");
     loop {
         std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+}
+
+pub struct UdpLibInit {}
+
+impl Drop for UdpLibInit {
+    fn drop(&mut self) {
+        unsafe {
+            brdc_deinit();
+        }
+        println!("UdpLibInit dropped");
     }
 }

@@ -5,6 +5,8 @@ use actix_web::{App, HttpResponse, HttpServer, Responder, get, web};
 use shared::database::Database;
 use std::thread;
 
+use crate::broadcaster::UdpLibInit;
+
 /// port where the database is served
 const DATAB_PORT: u16 = 6767;
 /// port where we listen and reply to broadcasts
@@ -14,6 +16,8 @@ const BROAD_PORT: u16 = 6769;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // holder for initializing the UDP library
+    let _udp_holder = UdpLibInit {};
     thread::spawn(|| {
         listener::reply_to_broadcasts();
     });
