@@ -2,3 +2,4 @@
 .env
 data.txt
 /backups
+/database-server/*.so
