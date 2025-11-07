@@ -1,6 +1,7 @@
 use image::codecs::png::PngEncoder;
 use image::{DynamicImage, GenericImage, ImageReader, RgbaImage};
 use photon_rs::PhotonImage;
+use photon_rs::transform::resize;
 use qrcode::{types::EcLevel, QrCode};
 use std::io::Cursor;
 
@@ -45,17 +46,23 @@ fn style_qr_code(
         .into_rgba8();
 
     let (header_width, header_height) = header_image.dimensions();
-    let (qr_width, _qr_height) = qr_image.dimensions();
 
-    let mut full_qr_image: RgbaImage = RgbaImage::new(header_width, header_height);
+    let temp_photon_qr = open_image_from_rgba8(&qr_image);
+    let resized_qr_photon = resize(
+        &temp_photon_qr,
+        header_height,
+        header_height,
+        photon_rs::transform::SamplingFilter::Nearest,
+    );
+    let resized_qr_rgba = convert_photon_to_rgba8(resized_qr_photon);
 
-    full_qr_image
-        .copy_from(&qr_image, header_width - qr_width, 0)
+    let mut combined_image = header_image;
+
+    combined_image
+        .copy_from(&resized_qr_rgba, header_width - header_height, 0)
         .expect("Failed to copy QR code");
 
-    let mut photon_qr_image = open_image_from_rgba8(&full_qr_image);
-    let photon_header_image = open_image_from_rgba8(&header_image);
-    photon_rs::multiple::blend(&mut photon_qr_image, &photon_header_image, "normal");
+    let mut photon_qr_image = open_image_from_rgba8(&combined_image);
 
     let ticket_num = ticket_number;
     let mut ticket_text = String::new();
@@ -70,16 +77,16 @@ fn style_qr_code(
     // APPLY photon_rs EFFECTS HERE
     TextBuilder::new(&mut photon_qr_image)
         .text(ticket_text)
-        .left(20)
-        .bottom(20)
-        .size(80.0)
-        .color((24, 24, 24))
+        .left(485)
+        .bottom(10)
+        .size(72.0)
+        .color((80, 10, 110))
         .write();
     TextBuilder::new(&mut photon_qr_image)
         .text(hash)
-        .right(100)
+        .right(90)
         .bottom(10)
-        .size(30.0)
+        .size(34.0)
         .color((0, 0, 0))
         .write();
 
