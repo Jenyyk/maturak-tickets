@@ -144,7 +144,13 @@ impl Database {
 
     pub fn len() -> usize {
         let mut len = 0;
-        let file = fs::read_to_string(DATABASE_PATH).unwrap();
+        let file = match fs::read_to_string(DATABASE_PATH) {
+            Ok(file) => file,
+            Err(why) => {
+                println!("Failed to read database file: {}", why);
+                return 20;
+            }
+        };
         for _line in file.lines() {
             len += 1;
         }
@@ -167,6 +173,7 @@ impl Database {
             panic!("Failed to open database file: {}", why);
         });
 
+        // safe unwrap here
         let reader = io::BufReader::new(file.unwrap());
 
         let mut database: Database = serde_json::from_reader(reader).unwrap_or_else(|why| {
@@ -206,8 +213,13 @@ impl Database {
         let timestamp = Local::now().format("%d-%m-%Y_%H_%M");
         let backup_name = format!("backups/backup_{}.txt", timestamp);
 
-        fs::create_dir_all("backups").unwrap();
-        fs::copy(DATABASE_PATH, &backup_name).unwrap();
+        fs::create_dir_all("backups").unwrap_or_else(|why| {
+            eprintln!("Failed to create backup directory: {why:?}");
+        });
+        fs::copy(DATABASE_PATH, &backup_name).unwrap_or_else(|why| {
+            eprintln!("Failed to copy database to backup: {why:?}");
+            0
+        });
         println!("done");
     }
 
