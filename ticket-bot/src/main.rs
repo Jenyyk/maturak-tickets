@@ -20,7 +20,7 @@ async fn main() {
     let mut manual_insertion: bool = false;
     let mut man_email: String = String::new();
     let mut man_amount: u8 = 0;
-    let mut man_type: String = String::from("normal");
+    let mut man_type: qrcodes::HeaderType = qrcodes::HeaderType::Normal;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-d" | "--del-data" => {
@@ -29,7 +29,13 @@ async fn main() {
             }
             "-m" | "--manual" => manual_insertion = true,
             "-e" | "--email" => man_email = args.next().cloned().expect("Empty flag set"),
-            "-t" | "--type" => man_type = args.next().cloned().expect("Empty flag set"),
+            "-t" | "--type" => {
+                man_type = match args.next().expect("Empty flag set").as_str() {
+                    "normal" => qrcodes::HeaderType::Normal,
+                    "sponsor" => qrcodes::HeaderType::Sponsor,
+                    _ => panic!("Invalid type flag set"),
+                }
+            }
             "-a" | "--amount" => {
                 man_amount = args
                     .next()
@@ -85,8 +91,11 @@ async fn main() {
         let amount = (transaction.amount + 100) / 400;
 
         // Generate vector of QR code slices and return their hashes
-        let (hashes, qr_code_vector) =
-            generate_qr_vector(&transaction_hash.to_string(), amount as usize, "normal");
+        let (hashes, qr_code_vector) = generate_qr_vector(
+            &transaction_hash.to_string(),
+            amount as usize,
+            qrcodes::HeaderType::Normal,
+        );
         // Generate a HashStruct now to pass to email function and add to database
         let hash_struct: HashStruct = HashStruct {
             address: transaction.address.clone(),
@@ -139,11 +148,8 @@ async fn main() {
             &man_email[..=5],
             rand::rng().random::<u16>()
         ));
-        let (hashes, qr_code_vector) = generate_qr_vector(
-            &transaction_hash.to_string(),
-            man_amount as usize,
-            &man_type,
-        );
+        let (hashes, qr_code_vector) =
+            generate_qr_vector(&transaction_hash.to_string(), man_amount as usize, man_type);
         let hash_struct: HashStruct = HashStruct {
             address: man_email,
             hashes,
@@ -197,7 +203,7 @@ pub fn generate_hash(t: &str) -> u64 {
 fn generate_qr_vector(
     transaction_hash: &str,
     amount: usize,
-    ticket_type: &str,
+    ticket_type: qrcodes::HeaderType,
 ) -> (Vec<String>, Vec<Vec<u8>>) {
     println!("Generating QR codes... ");
     let hashes: Mutex<Vec<String>> = Mutex::new(Vec::new());

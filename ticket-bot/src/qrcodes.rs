@@ -1,11 +1,17 @@
 use image::codecs::png::PngEncoder;
 use image::{DynamicImage, GenericImage, ImageReader, RgbaImage};
-use photon_rs::PhotonImage;
 use photon_rs::transform::resize;
+use photon_rs::PhotonImage;
 use qrcode::{types::EcLevel, QrCode};
 use std::io::Cursor;
 
-pub fn generate_qr_code(qr_content: &str, style_design: &str, ticket_number: u32) -> Vec<u8> {
+#[derive(Debug, Clone, Copy)]
+pub enum HeaderType {
+    Normal,
+    Sponsor,
+}
+
+pub fn generate_qr_code(qr_content: &str, style_design: HeaderType, ticket_number: u32) -> Vec<u8> {
     println!("Generating hash: {}", qr_content);
 
     // Generate the QR code
@@ -23,7 +29,11 @@ pub fn generate_qr_code(qr_content: &str, style_design: &str, ticket_number: u32
         .expect("Failed to write image to buffer");
 
     // Style the QR code by merging with header image
-    style_qr_code(buf, style_design, qr_content, ticket_number)
+    let header_path = match style_design {
+        HeaderType::Normal => "normal",
+        HeaderType::Sponsor => "sponsor",
+    };
+    style_qr_code(buf, header_path, qr_content, ticket_number)
 }
 
 fn style_qr_code(
